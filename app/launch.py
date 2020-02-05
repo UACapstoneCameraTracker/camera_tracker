@@ -9,10 +9,10 @@ preprocessing = [
     pc.GrayscaleTransformer(),
 ]
 
-predictors = [
-    pc.Detector(),
-    pc.Tracker(TRACKER_NAME)
-]
+predictors = {
+    'detector': pc.Detector(),
+    'tracker': pc.Tracker(TRACKER_NAME)
+}
 
 if __name__ == '__main__':
     cap = utils.get_stream()
@@ -20,6 +20,6 @@ if __name__ == '__main__':
 
     img = utils.run_pipeline(preprocessing)
 
-    loc = utils.run_predictor(img)
+    
 
     # low level interaction
