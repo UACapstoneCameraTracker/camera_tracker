@@ -3,12 +3,20 @@ This module provides predictors (trackers and detectors)
 """
 
 import cv2
-from typing import Dict
+from typing import Dict, Any, Tuple
+from abc import ABC, abstractmethod
+
 from .utils import (
     tracker_factory,
     BoundingBox,
     Image
 )
+
+
+class BasePredictionComponent(ABC):
+    @abstractmethod
+    def predict(self, img: Image) -> Any:
+        pass
 
 
 class CvTracker(BasePredictionComponent):
@@ -55,31 +63,36 @@ class PixelDifferenceDetector(BasePredictionComponent):
     """
     Detect movement by comparing two consecutive frames pixel by pixel.
     """
+
     def __init__(self, threshold=30, structuring_kernel_shape=(10, 10)):
         super().__init__()
 
         self.threshold = threshold
-        self.structuring_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, structuring_kernel_shape)
+        self.structuring_kernel = cv2.getStructuringElement(
+            cv2.MORPH_ELLIPSE, structuring_kernel_shape)
         self.prev_img = None
 
     def predict(self, img: Image) -> Tuple[bool, BoundingBox]:
         if len(img.shape) != 2:
-            raise RuntimeError('PixelDifferenceDetector only supports grayscale image')
+            raise RuntimeError(
+                'PixelDifferenceDetector only supports grayscale image')
 
         if self.prev_img is None:
             self.prev_img = img
             return False, None
-        
+
         img_delta = cv2.absdiff(self.prev_img, img)
-        _, img_delta = cv2.threshold(img_delta, self.threshold, 255, cv2.THRESH_BINARY)
+        _, img_delta = cv2.threshold(
+            img_delta, self.threshold, 255, cv2.THRESH_BINARY)
 
         img_delta = cv2.morphologyEx(img_delta, cv2.MORPH_OPEN, kernel)
 
-        _, contours, _ = cv2.findContours(img_delta.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        _, contours, _ = cv2.findContours(
+            img_delta.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         if countours:
-            moving_object_boxes = sorted([cv2.boundingRect(cntr) for cntr in countours], key=lambda i: i[2]*i[3])
+            moving_object_boxes = sorted(
+                [cv2.boundingRect(cntr) for cntr in countours], key=lambda i: i[2]*i[3])
             return True, moving_object_boxes[-1]
         else:
             return False, None
-

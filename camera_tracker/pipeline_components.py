@@ -4,6 +4,7 @@ This module provides essential pipelines for image processing.
 
 
 import cv2
+from typing import Tuple
 from abc import ABC, abstractmethod
 
 from .utils import (
@@ -16,12 +17,6 @@ from .utils import (
 class BaseTransformComponent(ABC):
     @abstractmethod
     def transform(self, img: Image) -> Image:
-        pass
-
-
-class BasePredictionComponent(ABC):
-    @abstractmethod
-    def predict(self, img: Image) -> Any:
         pass
 
 
