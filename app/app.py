@@ -2,6 +2,7 @@ import cv2
 import camera_tracker.pipeline_components as pc
 import camera_tracker.predictors as predictors
 import camera_tracker.utils as utils
+from contextlib import suppress
 
 
 IMG_SIZE = (960, 540)
@@ -36,7 +37,7 @@ def run(display=False):
             frame = utils.run_pipeline(pre_detector_pipe, frame)
             detected, detect_bbox = detector.predict(frame)
 
-        if detected or tracking:
+        if tracking or detected:
             # detected, start tracking
             frame = frame_orig.copy()
             frame = utils.run_pipeline(pre_tracker_pipe, frame)
@@ -47,23 +48,20 @@ def run(display=False):
         print('tracking:', tracking, 'detected:', detected)
 
         if display:
-            frame_tracking = frame.copy()
-            frame_detected = frame.copy()
+            frame_display = frame.copy()
             if tracking:
                 p1 = (int(track_bbox[0]), int(track_bbox[1]))
                 p2 = (int(track_bbox[0] + track_bbox[2]), int(track_bbox[1] + track_bbox[3]))
-                cv2.rectangle(frame_tracking, p1, p2, (255, 0, 0), 2, 1)
+                cv2.rectangle(frame_display, p1, p2, (0, 255, 0), 2, 1)
             if detected:
                 p1 = (int(detect_bbox[0]), int(detect_bbox[1]))
                 p2 = (int(detect_bbox[0] + detect_bbox[2]), int(detect_bbox[1] + detect_bbox[3]))
-                cv2.rectangle(frame_detected, p1, p2, (255, 0, 0), 2, 1)
+                cv2.rectangle(frame_display, p1, p2, (255, 0, 0), 2, 1)
 
-            cv2.imshow('tracker', frame_tracking)
-            cv2.imshow('detector', frame_detected)
-            try:
+            cv2.imshow('app', frame_display)
+            with suppress(Exception):
                 cv2.imshow('delta', detector.img_delta)
-            except:
-                pass
+
             if (cv2.waitKey(1) & 0xFF) == ord('q'):
                 break
 
