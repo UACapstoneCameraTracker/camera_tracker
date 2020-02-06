@@ -41,7 +41,11 @@ while True:
         cv2.rectangle(frame, p1, p2, (255, 0, 0), 2, 1)
 
     # display the image
-    cv2.imshow("detector", frame)
+    cv2.imshow('detect bbox', frame)
+    try:
+        cv2.imshow('img delta', detector.img_delta)
+    except:
+        pass
 
     if (cv2.waitKey(1) & 0xFF) == ord('q'):
         break

@@ -39,6 +39,9 @@ class CvTracker(BasePredictionComponent):
         self.tracker_inited = True
 
     def predict(self, img: Image) -> Tuple[bool, BoundingBox]:
+        if not self.tracker_inited:
+            raise RuntimeError('tracker not initialized!')
+
         timer = cv2.getTickCount()
         tracker_status, bbox = self.tracker.update(img)
         fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer)
@@ -64,7 +67,7 @@ class PixelDifferenceDetector(BasePredictionComponent):
     Detect movement by comparing two consecutive frames pixel by pixel.
     """
 
-    def __init__(self, threshold=30, structuring_kernel_shape=(20, 20)):
+    def __init__(self, threshold=10, structuring_kernel_shape=(20, 20)):
         super().__init__()
 
         self.threshold = threshold
@@ -86,6 +89,9 @@ class PixelDifferenceDetector(BasePredictionComponent):
             img_delta, self.threshold, 255, cv2.THRESH_BINARY)
 
         img_delta = cv2.morphologyEx(img_delta, cv2.MORPH_OPEN, self.kernel)
+        img_delta = cv2.dilate(img_delta, self.kernel, iterations=2)
+
+        self.img_delta = img_delta
 
         _, contours, _ = cv2.findContours(
             img_delta.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -93,7 +99,12 @@ class PixelDifferenceDetector(BasePredictionComponent):
         if contours:
             moving_object_boxes = sorted(
                 [cv2.boundingRect(cntr) for cntr in contours], key=lambda i: i[2]*i[3])
-            ret = (True, moving_object_boxes[-1])
+            
+            biggest_box = moving_object_boxes[0]
+            if biggest_box[2] * biggest_box[3] >= img.shape[0] * img.shape[1] / 2:
+                ret = (False, None)
+            else:
+                ret = (True, biggest_box)
         else:
             ret = (False, None)
         
