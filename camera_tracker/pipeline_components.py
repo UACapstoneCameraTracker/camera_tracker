@@ -34,11 +34,12 @@ class BlurTransformer(BaseTransformComponent):
     """
     Apply Gaussian Blur to input image.
     """
-    def __init__(self):
+    def __init__(self, ksize=(21, 21)):
         super().__init__()
+        self.ksize = ksize
 
     def transform(self, img: Image) -> Image:
-        out = cv2.GaussianBlur(img, ksize=(21, 21), sigmaX=0)
+        out = cv2.GaussianBlur(img, ksize=self.ksize, sigmaX=0)
         return out
 
 

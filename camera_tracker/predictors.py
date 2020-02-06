@@ -64,7 +64,7 @@ class PixelDifferenceDetector(BasePredictionComponent):
     Detect movement by comparing two consecutive frames pixel by pixel.
     """
 
-    def __init__(self, threshold=30, structuring_kernel_shape=(10, 10)):
+    def __init__(self, threshold=30, structuring_kernel_shape=(20, 20)):
         super().__init__()
 
         self.threshold = threshold
@@ -93,6 +93,9 @@ class PixelDifferenceDetector(BasePredictionComponent):
         if contours:
             moving_object_boxes = sorted(
                 [cv2.boundingRect(cntr) for cntr in contours], key=lambda i: i[2]*i[3])
-            return True, moving_object_boxes[-1]
+            ret = (True, moving_object_boxes[-1])
         else:
-            return False, None
+            ret = (False, None)
+        
+        self.prev_img = img.copy()
+        return ret
