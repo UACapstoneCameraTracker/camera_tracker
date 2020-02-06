@@ -13,6 +13,7 @@ pre_tracker_pipe = [
 ]
 
 pre_detector_pipe = [
+    pc.ResizeTransformer(out_size=IMG_SIZE),
     pc.GrayscaleTransformer(),
     pc.BlurTransformer()
 ]
@@ -22,55 +23,49 @@ tracker = predictors.CvTracker(TRACKER_NAME)
 
 def run(display=False):
     tracking = False
+    detected = False
     cap = utils.get_stream()
 
     while True:
-        ret, frame = cap.read()
+        ret, frame_orig = cap.read()
         if not ret:
             raise RuntimeError('frame not received')
 
-        frame = utils.run_pipeline(pre_tracker_pipe, frame)
-        frame_color = frame.copy()
-
         if not tracking:
+            frame = frame_orig.copy()
             frame = utils.run_pipeline(pre_detector_pipe, frame)
+            detected, detect_bbox = detector.predict(frame)
 
-            detected, bbox = detector.predict(frame)
-
-            if display:
-                if detected:
-                    p1 = (int(bbox[0]), int(bbox[1]))
-                    p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
-                    cv2.rectangle(frame, p1, p2, (255, 0, 0), 2, 1)
-                
-
-            # movement detected!
-            if detected:
-                print('movement detected')
-                tracker.init_tracker(frame_color, bbox)
-                tracking, bbox = tracker.predict(frame_color)
+        if detected or tracking:
+            # detected, start tracking
+            frame = frame_orig.copy()
+            frame = utils.run_pipeline(pre_tracker_pipe, frame)
+            if not tracking:
+                tracker.init_tracker(frame, detect_bbox)
+            tracking, track_bbox = tracker.predict(frame)
         
-        if tracking:
-            tracking, bbox = tracker.predict(frame_color)
+        print('tracking:', tracking, 'detected:', detected)
 
         if display:
+            frame_tracking = frame.copy()
+            frame_detected = frame.copy()
             if tracking:
-                p1 = (int(bbox[0]), int(bbox[1]))
-                p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
-                cv2.rectangle(frame_color, p1, p2, (255, 0, 0), 2, 1)
+                p1 = (int(track_bbox[0]), int(track_bbox[1]))
+                p2 = (int(track_bbox[0] + track_bbox[2]), int(track_bbox[1] + track_bbox[3]))
+                cv2.rectangle(frame_tracking, p1, p2, (255, 0, 0), 2, 1)
+            if detected:
+                p1 = (int(detect_bbox[0]), int(detect_bbox[1]))
+                p2 = (int(detect_bbox[0] + detect_bbox[2]), int(detect_bbox[1] + detect_bbox[3]))
+                cv2.rectangle(frame_detected, p1, p2, (255, 0, 0), 2, 1)
 
-            # display the image
-            cv2.imshow('detecter', frame)
-            cv2.imshow('tracker', frame_color)
+            cv2.imshow('tracker', frame_tracking)
+            cv2.imshow('detector', frame_detected)
+            try:
+                cv2.imshow('delta', detector.img_delta)
+            except:
+                pass
             if (cv2.waitKey(1) & 0xFF) == ord('q'):
                 break
-
-        tracker_stat = tracker.get_stat()
-        if tracker_stat['frame_count'] % 10 == 0:
-            print(tracker_stat)
-
-
-
 
 
 if __name__ == '__main__':
