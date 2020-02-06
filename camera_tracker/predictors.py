@@ -68,7 +68,7 @@ class PixelDifferenceDetector(BasePredictionComponent):
         super().__init__()
 
         self.threshold = threshold
-        self.structuring_kernel = cv2.getStructuringElement(
+        self.kernel = cv2.getStructuringElement(
             cv2.MORPH_ELLIPSE, structuring_kernel_shape)
         self.prev_img = None
 
@@ -85,14 +85,14 @@ class PixelDifferenceDetector(BasePredictionComponent):
         _, img_delta = cv2.threshold(
             img_delta, self.threshold, 255, cv2.THRESH_BINARY)
 
-        img_delta = cv2.morphologyEx(img_delta, cv2.MORPH_OPEN, kernel)
+        img_delta = cv2.morphologyEx(img_delta, cv2.MORPH_OPEN, self.kernel)
 
         _, contours, _ = cv2.findContours(
             img_delta.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        if countours:
+        if contours:
             moving_object_boxes = sorted(
-                [cv2.boundingRect(cntr) for cntr in countours], key=lambda i: i[2]*i[3])
+                [cv2.boundingRect(cntr) for cntr in contours], key=lambda i: i[2]*i[3])
             return True, moving_object_boxes[-1]
         else:
             return False, None
