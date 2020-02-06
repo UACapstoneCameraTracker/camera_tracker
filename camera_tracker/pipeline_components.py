@@ -1,23 +1,23 @@
 """
-This module provides essential pipelines for image processing and tracking.
+This module provides essential pipelines for image processing.
 """
-from typing import Tuple, Any
-from abc import ABC, abstractmethod
+
 
 import cv2
-import numpy as np
+from abc import ABC, abstractmethod
 
 from .utils import (
-    tracker_factory
+    tracker_factory,
+    BoundingBox,
+    Image
 )
 
-BoundingBox = Tuple[int, int, int, int]
-Image = np.array
 
 class BaseTransformComponent(ABC):
     @abstractmethod
     def transform(self, img: Image) -> Image:
         pass
+
 
 class BasePredictionComponent(ABC):
     @abstractmethod
@@ -35,41 +35,22 @@ class ResizeTransformer(BaseTransformComponent):
         return out
 
 
-class GrayscaleTransformer(BaseTransformComponent):
+class BlurTransformer(BaseTransformComponent):
+    """
+    Apply Gaussian Blur to input image.
+    """
     def __init__(self):
         super().__init__()
-    
+
     def transform(self, img: Image) -> Image:
-        out = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        out = cv2.GaussianBlur(img, ksize=(21, 21), sigmaX=0)
         return out
 
 
-class Tracker(BasePredictionComponent):
-    def __init__(self, tracker_name: str):
-        super().__init__()
-        self.tracker_name = tracker_name
-        self.tracker = tracker_factory(self.tracker_name)
-        self.tracker_inited = False
-
-        self.fps = 0
-        self.frame_cnt = 0
-    
-    def init_tracker(self, initial_frame: Image, initial_bbox) -> None:
-        self.tracker.init(initial_frame, initial_bbox)
-        self.tracker_inited = True
-    
-    def predict(self, img: Image) -> Tuple[bool, BoundingBox]:
-        timer = cv2.getTickCount()
-        tracker_status, bbox = self.tracker.update(img)
-        fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer)
-        tot_fps += fps
-        frame_cnt += 1
-
-
-class Detector(BasePredictionComponent):
+class GrayscaleTransformer(BaseTransformComponent):
     def __init__(self):
         super().__init__()
-    
-    def predict(self, img: Image) -> Tuple[bool, BoundingBox]:
 
-
+    def transform(self, img: Image) -> Image:
+        out = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        return out

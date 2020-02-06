@@ -1,5 +1,11 @@
-import numpy as np
 import cv2
+import numpy as np
+from typing import Tuple, Any
+
+# custom types
+BoundingBox = Tuple[int, int, int, int]
+Image = np.array
+
 
 def tracker_factory(tracker_name):
     tracker_table = {
@@ -13,12 +19,13 @@ def tracker_factory(tracker_name):
     }
     return tracker_table[tracker_name]()
 
+
 def get_stream(mock=False):
     if mock:
         cap = cv2.VideoCapture('../videos/helicopter1.MOV')
     else:
         cap = cv2.VideoCapture(0)
-    
+
     return cap
 
 
