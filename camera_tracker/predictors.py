@@ -92,6 +92,9 @@ class PixelDifferenceDetector(BasePredictionComponent):
         _, img_delta = cv2.threshold(
             img_delta, self.threshold, 255, cv2.THRESH_BINARY)
 
+        # filter out background noises
+        img_delta = cv2.morphologyEx(img_delta, cv2.MORPH_OPEN, self.kernel)
+        # enlarge foreground objects
         img_delta = cv2.morphologyEx(img_delta, cv2.MORPH_CLOSE, self.kernel)
 
         self.img_delta = img_delta
