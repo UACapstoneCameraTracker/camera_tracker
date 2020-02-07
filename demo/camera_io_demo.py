@@ -1,7 +1,7 @@
 import cv2
 from camera_tracker.utils import get_frame_generator
 
-fg = get_frame_generator(mock=True)
+fg = get_frame_generator(mock=False)
 
 for frame in fg:
     cv2.imshow('camera', frame)

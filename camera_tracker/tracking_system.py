@@ -10,11 +10,6 @@ import camera_tracker.utils as utils
 from contextlib import suppress
 
 
-IMG_SIZE = (960, 540)
-TRACKER_NAME = 'KCF'
-IOU_THRESHOLD = 0.4
-
-
 class TrackingSystem:
     def __init__(self, *args, **kwargs):
         self.tracker = kwargs['tracker']
@@ -22,6 +17,7 @@ class TrackingSystem:
         self.pre_tracker_pipe = kwargs['pre_tracker_pipe']
         self.pre_detector_pipe = kwargs['pre_detector_pipe']
         self.video_source = kwargs['video_source']
+        self.iou_threshold = kwargs['iou_threshold']
 
     def run(self, display=False):
         tracking = False
@@ -44,7 +40,7 @@ class TrackingSystem:
                     iou = utils.bbox_intersection_over_union(
                         detect_bbox, track_bbox)
                     print(f'iou: {iou}')
-                    if iou < IOU_THRESHOLD:
+                    if iou < self.iou_threshold:
                         self.tracker.decrease_health()
                         if self.tracker.get_health() == 0:
                             tracking = False
@@ -82,28 +78,3 @@ class TrackingSystem:
 
                 if (cv2.waitKey(1) & 0xFF) == ord('q'):
                     break
-
-
-if __name__ == '__main__':
-    pre_tracker_pipe = [
-        pc.ResizeTransformer(out_size=IMG_SIZE)
-    ]
-
-    pre_detector_pipe = [
-        pc.ResizeTransformer(out_size=IMG_SIZE),
-        pc.GrayscaleTransformer(),
-        pc.BlurTransformer()
-    ]
-
-    detector = predictors.PixelDifferenceDetector()
-    tracker = predictors.CvTracker(TRACKER_NAME)
-
-    tracking_sys = TrackingSystem(
-        tracker=tracker,
-        detector=detector,
-        pre_tracker_pipe=pre_tracker_pipe,
-        pre_detector_pipe=pre_detector_pipe,
-        video_source=utils.get_frame_generator(),
-    )
-
-    tracking_sys.run(display=True)

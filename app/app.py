@@ -2,75 +2,36 @@ import cv2
 import camera_tracker.pipeline_components as pc
 import camera_tracker.predictors as predictors
 import camera_tracker.utils as utils
-from contextlib import suppress
+from camera_tracker.tracking_system import TrackingSystem
 
+import settings
 
-IMG_SIZE = (960, 540)
-TRACKER_NAME = 'MOSSE'
+def setup_tracking_system():
+    pre_tracker_pipe = [
+        pc.ResizeTransformer(out_size=settings.IMG_SIZE)
+    ]
 
+    pre_detector_pipe = [
+        pc.ResizeTransformer(out_size=settings.IMG_SIZE),
+        pc.GrayscaleTransformer(),
+        pc.BlurTransformer()
+    ]
 
-pre_tracker_pipe = [
-    pc.ResizeTransformer(out_size=IMG_SIZE)
-]
+    detector = predictors.PixelDifferenceDetector(pixel_difference_threshold=settings.PIXEL_DIFFERENCE_TH,
+                                                structuring_kernel_shape=settings.STRUCTURING_KERNEL_SHAPE,
+                                                bbox_area_min=settings.BBOX_AREA_MIN_TH)
+    tracker = predictors.CvTracker(tracker_name=settings.TRACKER_NAME,
+                                tracker_health=settings.MAX_TRACKER_HEALTH)
 
-pre_detector_pipe = [
-    pc.ResizeTransformer(out_size=IMG_SIZE),
-    pc.GrayscaleTransformer(),
-    pc.BlurTransformer()
-]
-
-detector = predictors.PixelDifferenceDetector()
-tracker = predictors.CvTracker(TRACKER_NAME)
-
-
-def run(display=False):
-    tracking = False
-    detected = False
-    cap = utils.get_stream()
-
-    while True:
-        ret, frame_orig = cap.read()
-        if not ret:
-            raise RuntimeError('frame not received')
-
-        if not tracking:
-            frame = frame_orig.copy()
-            frame = utils.run_pipeline(pre_detector_pipe, frame)
-            detected, detect_bbox = detector.predict(frame)
-            if detected:
-                # init tracker
-                tracker.init_tracker(frame, detect_bbox)
-                tracking = True
-                track_bbox = detect_bbox
-        else:
-            # tracker is tracking
-            frame = frame_orig.copy()
-            frame = utils.run_pipeline(pre_tracker_pipe, frame)
-            tracking, track_bbox = tracker.predict(frame)
-
-        print('tracking:', tracking, 'detected:', detected)
-
-        if display:
-            frame_display = frame_orig.copy()
-            frame_display = utils.run_pipeline(pre_tracker_pipe, frame_display)
-            if tracking:
-                p1 = (int(track_bbox[0]), int(track_bbox[1]))
-                p2 = (int(track_bbox[0] + track_bbox[2]),
-                      int(track_bbox[1] + track_bbox[3]))
-                cv2.rectangle(frame_display, p1, p2, (0, 255, 0), 2, 1)
-            elif detected:
-                p1 = (int(detect_bbox[0]), int(detect_bbox[1]))
-                p2 = (int(detect_bbox[0] + detect_bbox[2]),
-                      int(detect_bbox[1] + detect_bbox[3]))
-                cv2.rectangle(frame_display, p1, p2, (255, 0, 0), 2, 1)
-
-            cv2.imshow('app', frame_display)
-            with suppress(Exception):
-                cv2.imshow('delta', detector.img_delta)
-
-            if (cv2.waitKey(1) & 0xFF) == ord('q'):
-                break
+    tracking_sys = TrackingSystem(tracker=tracker,
+                                detector=detector,
+                                pre_tracker_pipe=pre_tracker_pipe,
+                                pre_detector_pipe=pre_detector_pipe,
+                                video_source=utils.get_frame_generator(),
+                                iou_threshold=settings.IOU_THRESHOLD)
+    return tracking_sys
 
 
 if __name__ == '__main__':
-    run(display=True)
+    tracking_sys = setup_tracking_system()
+    tracking_sys.run(display=True)

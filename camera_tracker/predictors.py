@@ -13,9 +13,6 @@ from .utils import (
     bbox_area
 )
 
-BBOX_AREA_MIN_TH = 150
-MAX_TRACKER_HEALTH = 30
-
 
 class BasePredictionComponent(ABC):
     @abstractmethod
@@ -27,7 +24,8 @@ class CvTracker(BasePredictionComponent):
     """
     A wrapper to OpenCV tracker.
     """
-    def __init__(self, tracker_name: str):
+
+    def __init__(self, tracker_name: str, tracker_health: int):
         super().__init__()
         self.tracker_name = tracker_name
         self.tracker_inited = False
@@ -37,13 +35,14 @@ class CvTracker(BasePredictionComponent):
         self.fps = 0
         self.frame_cnt = 0
         self.fail_cnt = 0
-        self.tracker_health = MAX_TRACKER_HEALTH
+        self.max_tracker_health = tracker_health
+        self.tracker_health = self.max_tracker_health
 
     def init_tracker(self, initial_frame: Image, initial_bbox: BoundingBox) -> None:
         self.tracker = tracker_factory(self.tracker_name)
         self.tracker.init(initial_frame, initial_bbox)
         self.tracker_inited = True
-        self.tracker_health = MAX_TRACKER_HEALTH
+        self.tracker_health = self.max_tracker_health
 
     def predict(self, img: Image) -> Tuple[bool, BoundingBox]:
         if not self.tracker_inited:
@@ -70,10 +69,9 @@ class CvTracker(BasePredictionComponent):
 
     def get_health(self):
         return self.tracker_health
-    
+
     def decrease_health(self):
         self.tracker_health -= 1
-
 
 
 class PixelDifferenceDetector(BasePredictionComponent):
@@ -81,12 +79,15 @@ class PixelDifferenceDetector(BasePredictionComponent):
     Detect movement by comparing two consecutive frames pixel by pixel.
     """
 
-    def __init__(self, threshold=10, structuring_kernel_shape=(20, 20)):
+    def __init__(self, pixel_difference_threshold: int,
+                 structuring_kernel_shape: Tuple[int, int],
+                 bbox_area_min: int):
         super().__init__()
 
-        self.threshold = threshold
+        self.threshold = pixel_difference_threshold
         self.kernel = cv2.getStructuringElement(
             cv2.MORPH_ELLIPSE, structuring_kernel_shape)
+        self.bbox_area_min = bbox_area_min
         self.prev_img = None
 
     def predict(self, img: Image) -> Tuple[bool, BoundingBox]:
@@ -123,8 +124,8 @@ class PixelDifferenceDetector(BasePredictionComponent):
 
         self.prev_img = img.copy()
         return ret
-    
-    def validate_bbox(self, bbox: BoundingBox, frame: Image):
+
+    def validate_bbox(self, bbox: BoundingBox, frame: Image) -> bool:
         area = bbox_area(bbox)
         img_area = frame.shape[0] * frame.shape[1]
-        return bbox[2] > 1 and bbox[3] > 1 and (BBOX_AREA_MIN_TH < area < (img_area / 2))
+        return bbox[2] > 1 and bbox[3] > 1 and (self.bbox_area_min < area < (img_area / 2))
