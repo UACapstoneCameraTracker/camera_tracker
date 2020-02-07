@@ -12,6 +12,7 @@ from contextlib import suppress
 
 IMG_SIZE = (960, 540)
 TRACKER_NAME = 'CSRT'
+IOU_THRESHOLD = 0.4
 
 
 pre_tracker_pipe = [
@@ -51,7 +52,13 @@ def run(display=False):
             tracking, track_bbox = tracker.predict(frame)
             if detected:
                 # correct tracking if possible
-                pass
+                iou = utils.bbox_intersection_over_union(detect_bbox, track_bbox)
+                print(f'iou: {iou}')
+                if iou < IOU_THRESHOLD:
+                    tracker.decrease_health()
+                    if tracker.get_health() == 0:
+                        tracking = False
+
             # else keep tracking
         else:
             # tracker not tracking right now
