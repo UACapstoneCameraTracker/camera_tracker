@@ -1,10 +1,9 @@
 import cv2
+from camera_tracker.utils import get_frame_generator
 
-cap = cv2.VideoCapture(0)
+fg = get_frame_generator(mock=True)
 
-while True:
-    ret, frame = cap.read()
-
+for frame in fg:
     cv2.imshow('camera', frame)
 
     if (cv2.waitKey(1) & 0xFF) == ord('q'):
