@@ -5,7 +5,7 @@ import camera_tracker.predictors as predictors
 import camera_tracker.utils as utils
 
 IMG_SIZE = (960, 540)
-TRACKER_NAME = 'MOSSE'
+TRACKER_NAME = 'KCF'
 
 
 pre_tracker_pipe = [

@@ -22,6 +22,7 @@ pre_detector_pipe = [
 detector = predictors.PixelDifferenceDetector()
 tracker = predictors.CvTracker(TRACKER_NAME)
 
+
 def run(display=False):
     tracking = False
     detected = False
@@ -36,26 +37,31 @@ def run(display=False):
             frame = frame_orig.copy()
             frame = utils.run_pipeline(pre_detector_pipe, frame)
             detected, detect_bbox = detector.predict(frame)
-
-        if tracking or detected:
-            # detected, start tracking
+            if detected:
+                # init tracker
+                tracker.init_tracker(frame, detect_bbox)
+                tracking = True
+                track_bbox = detect_bbox
+        else:
+            # tracker is tracking
             frame = frame_orig.copy()
             frame = utils.run_pipeline(pre_tracker_pipe, frame)
-            if not tracking:
-                tracker.init_tracker(frame, detect_bbox)
             tracking, track_bbox = tracker.predict(frame)
-        
+
         print('tracking:', tracking, 'detected:', detected)
 
         if display:
-            frame_display = frame.copy()
+            frame_display = frame_orig.copy()
+            frame_display = utils.run_pipeline(pre_tracker_pipe, frame_display)
             if tracking:
                 p1 = (int(track_bbox[0]), int(track_bbox[1]))
-                p2 = (int(track_bbox[0] + track_bbox[2]), int(track_bbox[1] + track_bbox[3]))
+                p2 = (int(track_bbox[0] + track_bbox[2]),
+                      int(track_bbox[1] + track_bbox[3]))
                 cv2.rectangle(frame_display, p1, p2, (0, 255, 0), 2, 1)
-            if detected:
+            elif detected:
                 p1 = (int(detect_bbox[0]), int(detect_bbox[1]))
-                p2 = (int(detect_bbox[0] + detect_bbox[2]), int(detect_bbox[1] + detect_bbox[3]))
+                p2 = (int(detect_bbox[0] + detect_bbox[2]),
+                      int(detect_bbox[1] + detect_bbox[3]))
                 cv2.rectangle(frame_display, p1, p2, (255, 0, 0), 2, 1)
 
             cv2.imshow('app', frame_display)

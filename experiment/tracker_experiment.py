@@ -58,7 +58,7 @@ def run_tracking(tracker, cap, initial_bbox, display=False, add_text=True):
 
         # calculate the fps
         timer = cv2.getTickCount()
-        tracker_status, bbox = mytracker.update(frame)
+        tracker_status, bbox = tracker.update(frame)
         fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer)
         tot_fps += fps
         frame_cnt += 1

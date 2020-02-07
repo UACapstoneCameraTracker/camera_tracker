@@ -37,3 +37,7 @@ def run_pipeline(pipe, img):
 
 def run_predictor(pipe, img):
     raise NotImplementedError()
+
+
+def bbox_area(bbox):
+    return bbox[2] * bbox[3]
