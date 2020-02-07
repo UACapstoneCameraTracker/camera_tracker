@@ -14,6 +14,7 @@ from .utils import (
 )
 
 BBOX_AREA_MIN_TH = 150
+MAX_TRACKER_HEALTH = 30
 
 
 class BasePredictionComponent(ABC):
@@ -26,8 +27,6 @@ class CvTracker(BasePredictionComponent):
     """
     A wrapper to OpenCV tracker.
     """
-    MAX_TRACKER_HEALTH = 10
-
     def __init__(self, tracker_name: str):
         super().__init__()
         self.tracker_name = tracker_name
@@ -38,13 +37,13 @@ class CvTracker(BasePredictionComponent):
         self.fps = 0
         self.frame_cnt = 0
         self.fail_cnt = 0
-        self.tracker_health = self.MAX_TRACKER_HEALTH
+        self.tracker_health = MAX_TRACKER_HEALTH
 
     def init_tracker(self, initial_frame: Image, initial_bbox: BoundingBox) -> None:
         self.tracker = tracker_factory(self.tracker_name)
         self.tracker.init(initial_frame, initial_bbox)
         self.tracker_inited = True
-        self.tracker_health = self.MAX_TRACKER_HEALTH
+        self.tracker_health = MAX_TRACKER_HEALTH
 
     def predict(self, img: Image) -> Tuple[bool, BoundingBox]:
         if not self.tracker_inited:

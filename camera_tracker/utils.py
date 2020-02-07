@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 from typing import Tuple, Any
+from pathlib import Path
 
 # custom types
 BoundingBox = Tuple[int, int, int, int]
@@ -22,11 +23,23 @@ def tracker_factory(tracker_name):
 
 def get_stream(mock=False):
     if mock:
-        cap = cv2.VideoCapture('../videos/helicopter1.MOV')
+        video_path = str(Path(__file__).parents[2] / 'videos/helicopter1.MOV')
+        cap = cv2.VideoCapture(video_path)
     else:
         cap = cv2.VideoCapture(0)
 
     return cap
+
+def get_frame_generator(mock=False):
+    """
+    this function returns a generator that yields the current frame
+    """
+    cap = get_stream(mock)
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            return
+        yield frame
 
 
 def run_pipeline(pipe, img):
