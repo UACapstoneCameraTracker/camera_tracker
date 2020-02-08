@@ -40,4 +40,10 @@ if __name__ == '__main__':
     tracking_sys.start()
 
     while True:
-        time.sleep(1)
+        time.sleep(3)
+        frame = tracking_sys.get_video_frame()
+        loc = tracking_sys.get_location()
+
+        print('frame received' if frame is not None else 'no frame')
+        print('loc received' if loc is not None else 'no location')
+

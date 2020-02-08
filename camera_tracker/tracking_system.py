@@ -78,10 +78,12 @@ class TrackingSystem:
                     track_bbox = detect_bbox
                 # else continue loop
 
-            if tracking:
-                with self.loc_lock:
+            with self.loc_lock:
+                if tracking:
                     self.location = (track_bbox[0] + track_bbox[2] / 2,
                                     track_bbox[1] + track_bbox[3] / 2)
+                else:
+                    self.location = None
 
             tracker_stat = self.tracker.get_stat()
             print('tracking:', tracking, 'detected:',
