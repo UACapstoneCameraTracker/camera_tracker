@@ -117,7 +117,7 @@ class PixelDifferenceDetector(BasePredictionComponent):
             moving_object_boxes = sorted(
                 [cv2.boundingRect(cntr) for cntr in contours], key=lambda i: i[2]*i[3])
 
-            biggest_box = moving_object_boxes[0]
+            biggest_box = moving_object_boxes[-1]
             ret = (self.validate_bbox(biggest_box, img_delta), biggest_box)
         else:
             ret = (False, None)
