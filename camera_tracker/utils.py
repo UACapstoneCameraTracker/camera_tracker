@@ -13,7 +13,6 @@ def tracker_factory(tracker_name):
         'KCF': cv2.TrackerKCF_create,
         'MIL': cv2.TrackerMIL_create,
         'BOOSTING': cv2.TrackerBoosting_create,
-        'GOTURN': cv2.TrackerGOTURN_create,
         'MOSSE': cv2.TrackerMOSSE_create,
         'CSRT': cv2.TrackerCSRT_create,
         'MEDIANFLOW': cv2.TrackerMedianFlow_create
