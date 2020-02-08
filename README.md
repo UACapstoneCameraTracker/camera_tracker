@@ -19,5 +19,5 @@ A Camera tracking system
 
 ## Run tracker
 ```
-python camera_tracker/tracking_system.py
+python app/app.py
 ```
