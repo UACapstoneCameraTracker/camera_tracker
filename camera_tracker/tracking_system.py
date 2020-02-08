@@ -20,11 +20,27 @@ class TrackingSystem:
         self.iou_threshold = kwargs['iou_threshold']
         self.display = kwargs['display']
         self.thread = None
-    
+
+        self.curr_frame = None
+        self.location = None
+        self.frame_lock = threading.Lock()
+        self.loc_lock = threading.Lock()
+
     def start(self):
-        self.thread = threading.Thread(target=self.run_tracking, name='TrackingSystem')
+        self.thread = threading.Thread(
+            target=self.run_tracking, name='TrackingSystem')
         self.thread.start()
         print('thread started')
+
+    def get_location(self):
+        with self.loc_lock:
+            loc = self.location
+        return loc
+
+    def get_video_frame(self):
+        with self.frame_lock:
+            frame = self.curr_frame.copy()
+        return frame
 
     def run_tracking(self):
         tracking = False
@@ -33,6 +49,8 @@ class TrackingSystem:
         track_bbox = None
 
         for frame_orig in self.video_source:
+            with self.frame_lock:
+                self.curr_frame = frame_orig
             frame = frame_orig.copy()
             frame = utils.run_pipeline(self.pre_detector_pipe, frame)
             detected, detect_bbox = self.detector.predict(frame)
@@ -60,8 +78,14 @@ class TrackingSystem:
                     track_bbox = detect_bbox
                 # else continue loop
 
+            if tracking:
+                with self.loc_lock:
+                    self.location = (track_bbox[0] + track_bbox[2] / 2,
+                                    track_bbox[1] + track_bbox[3] / 2)
+
             tracker_stat = self.tracker.get_stat()
-            print('tracking:', tracking, 'detected:', detected, 'fps', tracker_stat['fps'])
+            print('tracking:', tracking, 'detected:',
+                  detected, 'fps', tracker_stat['fps'])
 
             if self.display:
                 frame_display = frame_orig.copy()
@@ -77,7 +101,7 @@ class TrackingSystem:
                     p2 = (int(detect_bbox[0] + detect_bbox[2]),
                           int(detect_bbox[1] + detect_bbox[3]))
                     cv2.rectangle(frame_display, p1, p2, (255, 0, 0), 2, 1)
-                
+
                 cv2.putText(frame_display, "Tracker FPS : {:.2f}".format(tracker_stat['fps']), (10, 50),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2)
 
