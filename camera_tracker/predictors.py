@@ -43,6 +43,8 @@ class CvTracker(BasePredictionComponent):
         self.tracker.init(initial_frame, initial_bbox)
         self.tracker_inited = True
         self.tracker_health = self.max_tracker_health
+        self.fps = 0
+        self.frame_cnt = 0
 
     def predict(self, img: Image) -> Tuple[bool, BoundingBox]:
         if not self.tracker_inited:
