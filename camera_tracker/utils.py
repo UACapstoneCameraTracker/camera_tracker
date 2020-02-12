@@ -1,14 +1,15 @@
 import cv2
 import numpy as np
-from typing import Tuple, Any
+from typing import Tuple, Any, List
 from pathlib import Path
+
 
 # custom types
 BoundingBox = Tuple[int, int, int, int]
 Image = np.array
 
 
-def tracker_factory(tracker_name):
+def tracker_factory(tracker_name: str):
     tracker_table = {
         'KCF': cv2.TrackerKCF_create,
         'MIL': cv2.TrackerMIL_create,
@@ -20,7 +21,7 @@ def tracker_factory(tracker_name):
     return tracker_table[tracker_name]()
 
 
-def get_stream(mock=False):
+def get_stream(mock: bool = False):
     if mock:
         video_path = str(Path(__file__).parents[2] / 'videos/helicopter1.MOV')
         cap = cv2.VideoCapture(video_path)
@@ -29,7 +30,7 @@ def get_stream(mock=False):
 
     return cap
 
-def get_frame_generator(mock=False):
+def get_frame_generator(mock: bool = False):
     """
     this function returns a generator that yields the current frame
     """
@@ -41,21 +42,17 @@ def get_frame_generator(mock=False):
         yield frame
 
 
-def run_pipeline(pipe, img):
+def run_pipeline(pipe: List, img: Image):
     for p in pipe:
         img = p.transform(img)
     return img
 
 
-def run_predictor(pipe, img):
-    raise NotImplementedError()
-
-
-def bbox_area(bbox: BoundingBox):
+def bbox_area(bbox: BoundingBox) -> float:
     return bbox[2] * bbox[3]
 
 
-def bbox_intersection_over_union(bbox_a, bbox_b):
+def bbox_intersection_over_union(bbox_a: BoundingBox, bbox_b: BoundingBox) -> float:
     # determine the (x, y)-coordinates of the intersection rectangle
     xA = max(bbox_a[0], bbox_b[0])
     yA = max(bbox_a[1], bbox_b[1])
