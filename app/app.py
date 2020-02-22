@@ -5,6 +5,8 @@ import camera_tracker.predictors as predictors
 import camera_tracker.utils as utils
 from camera_tracker.tracking_system import TrackingSystem
 
+from motor_control import gimbal as g
+
 import settings
 
 
@@ -44,6 +46,9 @@ if __name__ == '__main__':
         frame = tracking_sys.get_video_frame()
         loc = tracking_sys.get_location()
 
-        print('frame received' if frame is not None else 'no frame')
-        print('loc received' if loc is not None else 'no location')
+        print(f'frame received: {frame.shape}' if frame is not None else 'no frame')
+        print(f'loc received: {loc}' if loc is not None else 'no location')
+
+        if loc is not None:
+            g.move_to(loc, g.GimbalMode.RELATIVE)
 
