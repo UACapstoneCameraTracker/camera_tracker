@@ -1,5 +1,7 @@
+import os
 import cv2
 import time
+from pathlib import Path
 import camera_tracker.pipeline_components as pc
 import camera_tracker.predictors as predictors
 import camera_tracker.utils as utils
@@ -39,11 +41,16 @@ if __name__ == '__main__':
     tracking_sys = setup_tracking_system()
     tracking_sys.start()
 
+    if not Path(settings.IMG_FIFO_PATH).exists():
+        os.mkfifo(settings.IMG_FIFO_PATH)
+
     while True:
-        time.sleep(3)
+        time.sleep(0.03)
         frame = tracking_sys.get_video_frame()
         loc = tracking_sys.get_location()
 
         print('frame received' if frame is not None else 'no frame')
         print('loc received' if loc is not None else 'no location')
 
+        if frame is not None:
+            cv2.imwrite(settings.IMG_FIFO_PATH, frame)

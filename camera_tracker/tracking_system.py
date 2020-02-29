@@ -39,7 +39,10 @@ class TrackingSystem:
 
     def get_video_frame(self):
         with self.frame_lock:
-            frame = self.curr_frame.copy()
+            if self.curr_frame is not None:
+                frame = self.curr_frame.copy()
+            else:
+                frame = None
         return frame
 
     def run_tracking(self):
