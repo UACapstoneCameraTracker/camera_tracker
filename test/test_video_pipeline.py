@@ -8,7 +8,7 @@ from camera_tracker.pipeline_components import (
 )
 
 img = cv2.imread('pipeline_test_img.jpg')
-out_size = (960, 540)
+out_size = (640, 320)
 
 def make_pipeline():
     return [
@@ -23,6 +23,7 @@ class PipelineTest(unittest.TestCase):
 
         out = run_pipeline(pipe, img)
 
+        self.assertEqual(len(out.shape), 2)
         self.assertEqual(out_size[::-1], out.shape)
 
 
