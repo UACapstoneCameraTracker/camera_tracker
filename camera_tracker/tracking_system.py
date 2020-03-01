@@ -20,6 +20,8 @@ class TrackingSystem:
         self.iou_threshold = kwargs['iou_threshold']
         self.display = kwargs['display']
         self.thread = None
+        self.run_lock = threading.Lock()
+        self.run = False
 
         self.curr_frame = None
         self.location = None
@@ -29,8 +31,17 @@ class TrackingSystem:
     def start(self):
         self.thread = threading.Thread(
             target=self.run_tracking, name='TrackingSystem')
+
+        with self.run_lock:
+            self.run = True
+
         self.thread.start()
         print('thread started')
+    
+    def stop(self):
+        with self.run_lock:
+            self.run = False
+        print('thread stopped')
 
     def get_location(self):
         with self.loc_lock:
@@ -52,6 +63,10 @@ class TrackingSystem:
         track_bbox = None
 
         for frame_orig in self.video_source:
+            with self.run_lock:
+                if not self.run:
+                    break
+
             with self.frame_lock:
                 self.curr_frame = frame_orig
             frame = frame_orig.copy()
