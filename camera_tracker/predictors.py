@@ -116,11 +116,14 @@ class PixelDifferenceDetector(BasePredictionComponent):
             img_delta.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         if contours:
-            moving_object_boxes = sorted(
-                [cv2.boundingRect(cntr) for cntr in contours], key=lambda i: i[2]*i[3])
-
-            biggest_box = moving_object_boxes[-1]
-            ret = (self.validate_bbox(biggest_box, img_delta), biggest_box)
+            contours = [cv2.boundingRect(cntr) for cntr in contours]
+            ftr = lambda bbox: self.validate_bbox(bbox, img_delta)
+            contours_filtered = list(filter(ftr, contours))
+            if contours_filtered:
+                biggest_box = max(contours_filtered, key=lambda i: i[2]*i[3])
+                ret = (self.validate_bbox(biggest_box, img_delta), biggest_box)
+            else:
+                ret = (False, None)
         else:
             ret = (False, None)
 
