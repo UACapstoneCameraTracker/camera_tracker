@@ -23,7 +23,7 @@ def tracker_factory(tracker_name: str):
 
 def get_stream(mock: bool = False):
     if mock:
-        video_path = str(Path(__file__).parents[2] / 'videos/helicopter1.MOV')
+        video_path = str(Path(__file__).parents[2] / 'videos/performance_test.mov')
         cap = cv2.VideoCapture(video_path)
     else:
         cap = cv2.VideoCapture(0)

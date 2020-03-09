@@ -33,7 +33,8 @@ class CvTracker(BasePredictionComponent):
 
         # stats
         self.fps = 0
-        self.frame_cnt = 0
+        self.tot_frame_cnt = 0
+        self.this_success_frame_cnt = 0
         self.fail_cnt = 0
         self.max_tracker_health = tracker_health
         self.tracker_health = self.max_tracker_health
@@ -44,7 +45,7 @@ class CvTracker(BasePredictionComponent):
         self.tracker_inited = True
         self.tracker_health = self.max_tracker_health
         self.fps = 0
-        self.frame_cnt = 0
+        self.this_success_frame_cnt = 0
 
     def predict(self, img: Image) -> Tuple[bool, BoundingBox]:
         if not self.tracker_inited:
@@ -54,8 +55,9 @@ class CvTracker(BasePredictionComponent):
         tracker_status, bbox = self.tracker.update(img)
         fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer)
 
-        self.frame_cnt += 1
-        self.fps += (fps - self.fps) / self.frame_cnt
+        self.tot_frame_cnt += 1
+        self.this_success_frame_cnt += 1
+        self.fps += (fps - self.fps) / self.this_success_frame_cnt
 
         if not tracker_status:
             self.fail_cnt += 1
@@ -65,7 +67,7 @@ class CvTracker(BasePredictionComponent):
     def get_stat(self) -> Dict[str, int]:
         return {
             'fps': self.fps,
-            'frame_count': self.frame_cnt,
+            'frame_count': self.tot_frame_cnt,
             'failed_count': self.fail_cnt
         }
 

@@ -4,8 +4,8 @@ import cv2
 import sys
 
 FRAME_NAME = 'tracker'
-WIDTH = 960
-HEIGHT = 540
+WIDTH = 640
+HEIGHT = 360
 
 
 def tracker_factory(tracker_name):

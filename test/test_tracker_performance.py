@@ -27,9 +27,9 @@ def setup_tracking_system():
                                   detector=detector,
                                   pre_tracker_pipe=pre_tracker_pipe,
                                   pre_detector_pipe=pre_detector_pipe,
-                                  video_source=utils.get_frame_generator(),
+                                  video_source=utils.get_frame_generator(mock=True),
                                   iou_threshold=settings.IOU_THRESHOLD,
-                                  display=False)
+                                  display=True)
     return tracking_sys
 
 
@@ -48,6 +48,7 @@ class TrackingSystemPerformanceTest(unittest.TestCase):
         print('frame count', stats['frame_count'])
         print('failed count', stats['failed_count'])
         print('fail_ratio', fail_ratio)
+        print('fps', stats['fps'])
 
 if __name__ == '__main__':
     unittest.main()
