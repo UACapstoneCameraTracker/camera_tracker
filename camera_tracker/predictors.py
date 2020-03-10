@@ -10,7 +10,14 @@ from .utils import (
     tracker_factory,
     BoundingBox,
     Image,
-    bbox_area
+    bbox_area,
+    run_pipeline
+)
+
+from .pipeline_components import (
+    ThresholdTransformer,
+    OpeningTransformer,
+    ClosingTransformer,
 )
 
 
@@ -94,6 +101,12 @@ class PixelDifferenceDetector(BasePredictionComponent):
         self.bbox_area_min = bbox_area_min
         self.prev_img = None
 
+        self.pipe = [
+            ThresholdTransformer(self.threshold),
+            OpeningTransformer(self.kernel),
+            ClosingTransformer(self.kernel)
+        ]
+
     def predict(self, img: Image) -> Tuple[bool, BoundingBox]:
         if len(img.shape) != 2:
             raise RuntimeError(
@@ -104,13 +117,8 @@ class PixelDifferenceDetector(BasePredictionComponent):
             return False, None
 
         img_delta = cv2.absdiff(self.prev_img, img)
-        _, img_delta = cv2.threshold(
-            img_delta, self.threshold, 255, cv2.THRESH_BINARY)
 
-        # filter out background noises
-        img_delta = cv2.morphologyEx(img_delta, cv2.MORPH_OPEN, self.kernel)
-        # enlarge foreground objects
-        img_delta = cv2.morphologyEx(img_delta, cv2.MORPH_CLOSE, self.kernel)
+        img_delta = run_pipeline(self.pipe, img_delta)
 
         self.img_delta = img_delta
 

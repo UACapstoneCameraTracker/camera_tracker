@@ -34,6 +34,7 @@ class BlurTransformer(BaseTransformComponent):
     """
     Apply Gaussian Blur to input image.
     """
+
     def __init__(self, ksize=(21, 21)):
         super().__init__()
         self.ksize = ksize
@@ -50,3 +51,34 @@ class GrayscaleTransformer(BaseTransformComponent):
     def transform(self, img: Image) -> Image:
         out = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         return out
+
+
+class ThresholdTransformer(BaseTransformComponent):
+    def __init__(self, threshold):
+        super().__init__()
+        self.threshold = threshold
+
+    def transform(self, img: Image):
+        _, img = cv2.threshold(
+            img, self.threshold, 255, cv2.THRESH_BINARY)
+        return img
+
+
+class OpeningTransformer(BaseTransformComponent):
+    def __init__(self, kernel):
+        super().__init__()
+        self._kernel = kernel
+
+    def transform(self, img: Image) -> Image:
+        img = cv2.morphologyEx(img, cv2.MORPH_OPEN, self._kernel)
+        return img
+
+
+class ClosingTransformer(BaseTransformComponent):
+    def __init__(self, kernel):
+        super().__init__()
+        self._kernel = kernel
+
+    def transform(self, img: Image) -> Image:
+        img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, self._kernel)
+        return img
