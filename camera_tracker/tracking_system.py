@@ -21,26 +21,29 @@ class TrackingSystem:
         self.display = kwargs['display']
         self.thread = None
         self.run_lock = threading.Lock()
-        self.run = False
+        self.running = False
 
         self.curr_frame = None
         self.location = None
         self.frame_lock = threading.Lock()
         self.loc_lock = threading.Lock()
 
+        self.tracking = False
+        self.detected = False
+
     def start(self):
         self.thread = threading.Thread(
-            target=self.run_tracking, name='TrackingSystem')
+            target=self.run_sys, name='TrackingSystem')
 
         with self.run_lock:
-            self.run = True
+            self.running = True
 
         self.thread.start()
         print('thread started')
     
     def stop(self):
         with self.run_lock:
-            self.run = False
+            self.running = False
         print('thread stopped')
 
     def get_location(self):
@@ -55,29 +58,36 @@ class TrackingSystem:
             else:
                 frame = None
         return frame
+    
+    def pause_tracker(self):
+        pass
 
-    def run_tracking(self):
-        tracking = False
-        detected = False
-        detect_bbox = None
-        track_bbox = None
+    def continue_tracker(self):
+        pass
 
+    def pause_detector(self):
+        pass
+
+    def continue_detector(self):
+        pass
+
+    def run_sys(self):
         for frame_orig in self.video_source:
             with self.run_lock:
-                if not self.run:
+                if not self.running:
                     break
 
             with self.frame_lock:
                 self.curr_frame = frame_orig
             frame = frame_orig.copy()
             frame = utils.run_pipeline(self.pre_detector_pipe, frame)
-            detected, detect_bbox = self.detector.predict(frame)
+            self.detected, detect_bbox = self.detector.predict(frame)
 
-            if tracking:
+            if self.tracking:
                 frame = frame_orig.copy()
                 frame = utils.run_pipeline(self.pre_tracker_pipe, frame)
-                tracking, track_bbox = self.tracker.predict(frame)
-                if detected:
+                self.tracking, track_bbox = self.tracker.predict(frame)
+                if self.detected:
                     # correct tracking if possible
                     iou = utils.bbox_intersection_over_union(
                         detect_bbox, track_bbox)
@@ -85,38 +95,38 @@ class TrackingSystem:
                     if iou < self.iou_threshold:
                         self.tracker.decrease_health()
                         if self.tracker.get_health() == 0:
-                            tracking = False
+                            self.tracking = False
                 # else keep tracking
             else:
                 # tracker not tracking right now
-                if detected:
+                if self.detected:
                     # detected, so initialize tracker
                     self.tracker.init_tracker(frame, detect_bbox)
-                    tracking = True
+                    self.tracking = True
                     track_bbox = detect_bbox
                 # else continue loop
 
             with self.loc_lock:
-                if tracking:
+                if self.tracking:
                     self.location = (track_bbox[0] + track_bbox[2] / 2,
                                     track_bbox[1] + track_bbox[3] / 2)
                 else:
                     self.location = None
 
             tracker_stat = self.tracker.get_stat()
-            print('tracking:', tracking, 'detected:',
-                  detected, 'fps', tracker_stat['fps'])
+            print('tracking:', self.tracking, 'detected:',
+                  self.detected, 'fps', tracker_stat['fps'])
 
             if self.display:
                 frame_display = frame_orig.copy()
                 frame_display = utils.run_pipeline(
                     self.pre_tracker_pipe, frame_display)
-                if tracking:
+                if self.tracking:
                     p1 = (int(track_bbox[0]), int(track_bbox[1]))
                     p2 = (int(track_bbox[0] + track_bbox[2]),
                           int(track_bbox[1] + track_bbox[3]))
                     cv2.rectangle(frame_display, p1, p2, (0, 255, 0), 2, 1)
-                if detected:
+                if self.detected:
                     p1 = (int(detect_bbox[0]), int(detect_bbox[1]))
                     p2 = (int(detect_bbox[0] + detect_bbox[2]),
                           int(detect_bbox[1] + detect_bbox[3]))
