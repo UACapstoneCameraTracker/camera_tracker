@@ -92,13 +92,15 @@ class PixelDifferenceDetector(BasePredictionComponent):
 
     def __init__(self, pixel_difference_threshold: int,
                  structuring_kernel_shape: Tuple[int, int],
-                 bbox_area_min: int):
+                 bbox_area_min: float,
+                 bbox_area_max: float):
         super().__init__()
 
         self.threshold = pixel_difference_threshold
         self.kernel = cv2.getStructuringElement(
             cv2.MORPH_ELLIPSE, structuring_kernel_shape)
         self.bbox_area_min = bbox_area_min
+        self.bbox_area_max = bbox_area_max
         self.prev_img = None
 
         self.pipe = [
@@ -127,11 +129,10 @@ class PixelDifferenceDetector(BasePredictionComponent):
 
         if contours:
             contours = [cv2.boundingRect(cntr) for cntr in contours]
-            ftr = lambda bbox: self.validate_bbox(bbox, img_delta)
-            contours_filtered = list(filter(ftr, contours))
+            contours_filtered = list(filter(self.validate_bbox, contours))
             if contours_filtered:
                 biggest_box = max(contours_filtered, key=lambda i: i[2]*i[3])
-                ret = (self.validate_bbox(biggest_box, img_delta), biggest_box)
+                ret = (self.validate_bbox(biggest_box), biggest_box)
             else:
                 ret = (False, None)
         else:
@@ -140,7 +141,6 @@ class PixelDifferenceDetector(BasePredictionComponent):
         self.prev_img = img.copy()
         return ret
 
-    def validate_bbox(self, bbox: BoundingBox, frame: Image) -> bool:
+    def validate_bbox(self, bbox: BoundingBox) -> bool:
         area = bbox_area(bbox)
-        img_area = frame.shape[0] * frame.shape[1]
-        return bbox[2] > 1 and bbox[3] > 1 and (self.bbox_area_min < area < (img_area / 2))
+        return bbox[2] > 1 and bbox[3] > 1 and (self.bbox_area_min < area < self.bbox_area_max)
