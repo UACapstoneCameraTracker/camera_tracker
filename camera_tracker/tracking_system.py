@@ -30,6 +30,16 @@ class TrackingSystem:
 
         self.tracking = False
         self.detected = False
+    
+    def reset_state_vars(self):
+        """
+        Reset state variables. This function assumes
+        no other thread is running so it's not thread-safe
+        """
+        self.curr_frame = None
+        self.location = None
+        self.tracking = False
+        self.detected = False
 
     def start(self):
         self.thread = threading.Thread(
@@ -44,6 +54,9 @@ class TrackingSystem:
     def stop(self):
         with self.run_lock:
             self.running = False
+        self.thread.join()
+        
+        self.reset_state_vars()
         print('thread stopped')
 
     def get_location(self):
