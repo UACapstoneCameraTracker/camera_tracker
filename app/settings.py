@@ -9,6 +9,6 @@ MAX_TRACKER_HEALTH = 10
 PIXEL_DIFFERENCE_TH = 10
 STRUCTURING_KERNEL_SHAPE = (20, 20)
 
-DISPLAY = True
+DISPLAY = False
 IMG_FIFO_PATH = '/home/pi/fifo_img.jpg'
 LOC_FIFO_PATH = '/home/pi/fifo_loc.txt'

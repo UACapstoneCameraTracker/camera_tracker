@@ -11,6 +11,16 @@ from contextlib import suppress
 
 
 class TrackingSystem:
+    """
+    The tracking system.
+    
+    A TrackingSystem object has two outputs:
+    1. location: the location of tracked object. When the location
+                 is available, receiving thread(s) will be notified
+                 by a condition variable.
+    2. frame: the current frame received. Receiving thread(s) can 
+              get the current frame by calling get_video_frame method.   
+    """
     def __init__(self, *args, **kwargs):
         self.tracker = kwargs['tracker']
         self.detector = kwargs['detector']
@@ -24,9 +34,11 @@ class TrackingSystem:
         self.running = False
 
         self.curr_frame = None
+        self.frame_lock = threading.RLock()
+        
         self.location = None
-        self.frame_lock = threading.Lock()
-        self.loc_lock = threading.Lock()
+        self.loc_lock = threading.RLock()
+        self.loc_cv = threading.Condition(self.loc_lock)
 
         self.tracking = False
         self.detected = False
@@ -71,18 +83,6 @@ class TrackingSystem:
             else:
                 frame = None
         return frame
-    
-    def pause_tracker(self):
-        pass
-
-    def continue_tracker(self):
-        pass
-
-    def pause_detector(self):
-        pass
-
-    def continue_detector(self):
-        pass
 
     def run_sys(self):
         for frame_orig in self.video_source:
@@ -123,6 +123,7 @@ class TrackingSystem:
                 if self.tracking:
                     self.location = (track_bbox[0] + track_bbox[2] / 2,
                                     track_bbox[1] + track_bbox[3] / 2)
+                    self.loc_cv.notify_all()
                 else:
                     self.location = None
 
