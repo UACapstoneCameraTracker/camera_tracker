@@ -132,8 +132,12 @@ class TrackingSystem:
                           int(detect_bbox[1] + detect_bbox[3]))
                     cv2.rectangle(frame_display, p1, p2, (255, 0, 0), 2, 1)
 
-                cv2.putText(frame_display, "Tracker FPS : {:.2f}".format(tracker_stat['fps']), (10, 50),
+                cv2.putText(frame_display, 'Tracker FPS : {:.2f}'.format(tracker_stat['fps']), (10, 30),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2)
+                cv2.putText(frame_display, 'tracker', (10, 60),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 255, 0), 2)
+                cv2.putText(frame_display, 'detector', (10, 90),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 0, 0), 2)
 
                 cv2.imshow('app', frame_display)
                 with suppress(Exception):
