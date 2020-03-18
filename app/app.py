@@ -23,7 +23,8 @@ def setup_tracking_system():
 
     detector = predictors.PixelDifferenceDetector(pixel_difference_threshold=settings.PIXEL_DIFFERENCE_TH,
                                                   structuring_kernel_shape=settings.STRUCTURING_KERNEL_SHAPE,
-                                                  bbox_area_min=settings.BBOX_AREA_MIN_TH)
+                                                  bbox_area_min=settings.BBOX_AREA_MIN_TH,
+                                                  bbox_area_max = settings.BBOX_AREA_MAX_TH)
     tracker = predictors.CvTracker(tracker_name=settings.TRACKER_NAME,
                                    tracker_health=settings.MAX_TRACKER_HEALTH)
 
