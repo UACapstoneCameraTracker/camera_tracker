@@ -58,7 +58,7 @@ def motor_communication():
             while not tracking_sys.loc_cv.wait():
                 pass
             loc = tracking_sys.get_location()
-            gimbal.move_to(loc, gimbal.GimbalMode.RELATIVE, settings.IMG_SIZE)
+            gimbal.move_to(loc, settings.IMG_SIZE)
 
 
 if __name__ == '__main__':
@@ -73,4 +73,4 @@ if __name__ == '__main__':
         target=server_communication, name='server_comm')
     server_comm_thread.start()
 
-    # motor_communication()
+    motor_communication()

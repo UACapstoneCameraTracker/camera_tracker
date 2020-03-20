@@ -106,7 +106,6 @@ class TrackingSystem:
                     # correct tracking if possible
                     iou = utils.bbox_intersection_over_union(
                         detect_bbox, track_bbox)
-                    print(f'iou: {iou}')
                     if iou < self.iou_threshold:
                         self.tracker.decrease_health()
                         if self.tracker.get_health() == 0:
