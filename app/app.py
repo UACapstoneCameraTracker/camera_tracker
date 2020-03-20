@@ -53,12 +53,13 @@ def server_communication():
 
 
 def motor_communication():
+    gimbal.init_gimbal(settings.IMG_SIZE)
     while True:
         with tracking_sys.loc_cv:
             while not tracking_sys.loc_cv.wait():
                 pass
             loc = tracking_sys.get_location()
-            gimbal.move_to(loc, settings.IMG_SIZE)
+            gimbal.move_to(loc)
 
 
 if __name__ == '__main__':
