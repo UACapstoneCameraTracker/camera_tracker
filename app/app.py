@@ -73,4 +73,4 @@ if __name__ == '__main__':
         target=server_communication, name='server_comm')
     server_comm_thread.start()
 
-    motor_communication()
+    # motor_communication()

@@ -1,7 +1,7 @@
 """
 This module provides predictors (trackers and detectors)
 """
-
+import time
 import cv2
 from typing import Dict, Any, Tuple
 from abc import ABC, abstractmethod
@@ -18,6 +18,7 @@ from .pipeline_components import (
     ThresholdTransformer,
     OpeningTransformer,
     ClosingTransformer,
+    DilatingTransformer
 )
 
 
@@ -39,6 +40,7 @@ class CvTracker(BasePredictionComponent):
         self.tracker = None
 
         # stats
+        self.frame_process_time = 0
         self.fps = 0
         self.tot_frame_cnt = 0
         self.this_success_frame_cnt = 0
@@ -55,6 +57,8 @@ class CvTracker(BasePredictionComponent):
         self.this_success_frame_cnt = 0
 
     def predict(self, img: Image) -> Tuple[bool, BoundingBox]:
+
+        t0 = time.time()
         if not self.tracker_inited:
             raise RuntimeError('tracker not initialized!')
 
@@ -68,11 +72,14 @@ class CvTracker(BasePredictionComponent):
 
         if not tracker_status:
             self.fail_cnt += 1
+        
+        self.frame_process_time = time.time() - t0
 
         return tracker_status, bbox
 
     def get_stat(self) -> Dict[str, int]:
         return {
+            'frame_process_time': self.frame_process_time,
             'fps': self.fps,
             'frame_count': self.tot_frame_cnt,
             'failed_count': self.fail_cnt
@@ -103,13 +110,22 @@ class PixelDifferenceDetector(BasePredictionComponent):
         self.bbox_area_max = bbox_area_max
         self.prev_img = None
 
+        # self.pipe = [
+        #     ThresholdTransformer(self.threshold),
+        #     OpeningTransformer(self.kernel),
+        #     ClosingTransformer(self.kernel)
+        # ]
+
         self.pipe = [
             ThresholdTransformer(self.threshold),
-            OpeningTransformer(self.kernel),
-            ClosingTransformer(self.kernel)
+            DilatingTransformer(self.kernel, 2)
         ]
 
+        # stat
+        self.frame_process_time = 0
+
     def predict(self, img: Image) -> Tuple[bool, BoundingBox]:
+        t0 = time.time()
         if len(img.shape) != 2:
             raise RuntimeError(
                 'PixelDifferenceDetector only supports grayscale image')
@@ -139,7 +155,14 @@ class PixelDifferenceDetector(BasePredictionComponent):
             ret = (False, None)
 
         self.prev_img = img.copy()
+
+        self.frame_process_time = time.time() - t0
         return ret
+    
+    def get_stat(self) -> Dict[str, int]:
+        return {
+            'frame_process_time': self.frame_process_time
+        }
 
     def validate_bbox(self, bbox: BoundingBox) -> bool:
         area = bbox_area(bbox)

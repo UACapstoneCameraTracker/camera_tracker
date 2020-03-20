@@ -82,3 +82,14 @@ class ClosingTransformer(BaseTransformComponent):
     def transform(self, img: Image) -> Image:
         img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, self._kernel)
         return img
+
+
+class DilatingTransformer(BaseTransformComponent):
+    def __init__(self, kernel, iteration=1):
+        super().__init__()
+        self._kernel = kernel
+        self._iteration = iteration
+
+    def transform(self, img: Image) -> Image:
+        img = cv2.dilate(img, self._kernel, iterations=self._iteration)
+        return img

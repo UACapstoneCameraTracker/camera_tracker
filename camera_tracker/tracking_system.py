@@ -2,6 +2,7 @@
 This version lets the detector to run all the time,
 so adjustments to the tracker can be made.
 """
+import time
 import threading
 import cv2
 import camera_tracker.pipeline_components as pc
@@ -13,7 +14,7 @@ from contextlib import suppress
 class TrackingSystem:
     """
     The tracking system.
-    
+
     A TrackingSystem object has two outputs:
     1. location: the location of tracked object. When the location
                  is available, receiving thread(s) will be notified
@@ -21,6 +22,7 @@ class TrackingSystem:
     2. frame: the current frame received. Receiving thread(s) can 
               get the current frame by calling get_video_frame method.   
     """
+
     def __init__(self, *args, **kwargs):
         self.tracker = kwargs['tracker']
         self.detector = kwargs['detector']
@@ -35,14 +37,14 @@ class TrackingSystem:
 
         self.curr_frame = None
         self.frame_lock = threading.RLock()
-        
+
         self.location = None
         self.loc_lock = threading.RLock()
         self.loc_cv = threading.Condition(self.loc_lock)
 
         self.tracking = False
         self.detected = False
-    
+
     def reset_state_vars(self):
         """
         Reset state variables. This function assumes
@@ -62,12 +64,12 @@ class TrackingSystem:
 
         self.thread.start()
         print('thread started')
-    
+
     def stop(self):
         with self.run_lock:
             self.running = False
         self.thread.join()
-        
+
         self.reset_state_vars()
         print('thread stopped')
 
@@ -122,14 +124,12 @@ class TrackingSystem:
             with self.loc_lock:
                 if self.tracking:
                     self.location = (track_bbox[0] + track_bbox[2] / 2,
-                                    track_bbox[1] + track_bbox[3] / 2)
+                                     track_bbox[1] + track_bbox[3] / 2)
                     self.loc_cv.notify_all()
                 else:
                     self.location = None
 
             tracker_stat = self.tracker.get_stat()
-            print('tracking:', self.tracking, 'detected:',
-                  self.detected, 'fps', tracker_stat['fps'])
 
             if self.display:
                 frame_display = frame_orig.copy()
@@ -159,3 +159,9 @@ class TrackingSystem:
 
                 if (cv2.waitKey(1) & 0xFF) == ord('q'):
                     break
+
+                print(f'tracking: {self.tracking}; detected: {self.detected}')
+                print(
+                    f"time taken on detecting: {self.detector.get_stat()['frame_process_time']}")
+                print(
+                    f"time taken on tracking: {self.tracker.get_stat()['frame_process_time']}")
