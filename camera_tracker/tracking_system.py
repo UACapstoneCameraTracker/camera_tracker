@@ -26,14 +26,18 @@ class TrackingSystem:
     def __init__(self, *args, **kwargs):
         self.tracker = kwargs['tracker']
         self.detector = kwargs['detector']
+        self.camera_moving_detector = kwargs['camera_moving_detector']
         self.pre_tracker_pipe = kwargs['pre_tracker_pipe']
         self.pre_detector_pipe = kwargs['pre_detector_pipe']
         self.video_source = kwargs['video_source']
         self.iou_threshold = kwargs['iou_threshold']
         self.display = kwargs['display']
         self.thread = None
+        self.camera_moving_thread = None
         self.run_lock = threading.Lock()
         self.running = False
+        self.pause_lock = threading.RLock()
+        self.paused = False
 
         self.curr_frame = None
         self.frame_lock = threading.RLock()
@@ -61,20 +65,33 @@ class TrackingSystem:
     def start(self):
         self.thread = threading.Thread(
             target=self.run_sys, name='TrackingSystem')
+        self.camera_moving_thread = threading.Thread(
+            target=self.detect_camera_moving_thread, name='DetectCameraMoving')
 
         with self.run_lock:
             self.running = True
 
         self.thread.start()
-        print('thread started')
+        self.camera_moving_thread.start()
+
+        print('threads started')
 
     def stop(self):
         with self.run_lock:
             self.running = False
         self.thread.join()
+        self.camera_moving_thread.join()
 
         self.reset_state_vars()
-        print('thread stopped')
+        print('threads stopped')
+
+    def pause(self):
+        with self.pause_lock:
+            self.paused = True
+
+    def resume(self):
+        with self.pause_lock:
+            self.paused = False
 
     def get_location(self):
         with self.loc_lock:
@@ -95,8 +112,14 @@ class TrackingSystem:
             with self.run_lock:
                 if not self.running:
                     break
+
             with self.frame_lock:
                 self.curr_frame = frame_orig
+
+            with self.pause_lock:
+                if self.paused:
+                    continue
+
             frame = frame_orig.copy()
             frame = utils.run_pipeline(self.pre_detector_pipe, frame)
             self.detected, detect_bbox = self.detector.predict(frame)
@@ -169,5 +192,30 @@ class TrackingSystem:
                     f"time taken on detecting: {self.detector.get_stat()['frame_process_time']}")
                 print(
                     f"time taken on tracking: {self.tracker.get_stat()['frame_process_time']}")
-            
+
             t0 = time.time()
+
+    def detect_camera_moving_thread(self):
+        paused_lcoal = False
+        while True:
+            with self.run_lock:
+                if not self.running:
+                    break
+            
+            with self.frame_lock:
+                if self.curr_frame is None:
+                    continue
+                frame = self.curr_frame.copy()
+
+            frame = utils.run_pipeline(self.pre_detector_pipe, frame)
+            is_moving = self.camera_moving_detector.predict(frame)
+
+            if is_moving and not paused_lcoal:
+                print('camera moved! pause')
+                self.pause()
+                self.reset_state_vars()
+                paused_lcoal = True
+            elif not is_moving and paused_lcoal:
+                print('resume')
+                self.resume()
+                paused_lcoal = False

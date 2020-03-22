@@ -3,8 +3,10 @@ This module provides predictors (trackers and detectors)
 """
 import time
 import cv2
+import numpy as np
 from typing import Dict, Any, Tuple
 from abc import ABC, abstractmethod
+from contextlib import suppress
 
 from .utils import (
     tracker_factory,
@@ -48,7 +50,7 @@ class CvTracker(BasePredictionComponent):
         self.max_tracker_health = tracker_health
         self.tracker_health = self.max_tracker_health
 
-    def init_tracker(self, initial_frame: Image, initial_bbox: BoundingBox) -> None:
+    def init_tracker(self, initial_frame: Image, initial_bbox: BoundingBox):
         self.tracker = tracker_factory(self.tracker_name)
         self.tracker.init(initial_frame, initial_bbox)
         self.tracker_inited = True
@@ -72,7 +74,7 @@ class CvTracker(BasePredictionComponent):
 
         if not tracker_status:
             self.fail_cnt += 1
-        
+
         self.frame_process_time = time.time() - t0
 
         return tracker_status, bbox
@@ -85,7 +87,7 @@ class CvTracker(BasePredictionComponent):
             'failed_count': self.fail_cnt
         }
 
-    def get_health(self):
+    def get_health(self) -> int:
         return self.tracker_health
 
     def decrease_health(self):
@@ -109,12 +111,6 @@ class PixelDifferenceDetector(BasePredictionComponent):
         self.bbox_area_min = bbox_area_min
         self.bbox_area_max = bbox_area_max
         self.prev_img = None
-
-        # self.pipe = [
-        #     ThresholdTransformer(self.threshold),
-        #     OpeningTransformer(self.kernel),
-        #     ClosingTransformer(self.kernel)
-        # ]
 
         self.pipe = [
             ThresholdTransformer(self.threshold),
@@ -158,7 +154,7 @@ class PixelDifferenceDetector(BasePredictionComponent):
 
         self.frame_process_time = time.time() - t0
         return ret
-    
+
     def get_stat(self) -> Dict[str, int]:
         return {
             'frame_process_time': self.frame_process_time
@@ -167,3 +163,19 @@ class PixelDifferenceDetector(BasePredictionComponent):
     def validate_bbox(self, bbox: BoundingBox) -> bool:
         area = bbox_area(bbox)
         return bbox[2] > 1 and bbox[3] > 1 and (self.bbox_area_min < area < self.bbox_area_max)
+
+
+class CameraMovingDetector(BasePredictionComponent):
+    def __init__(self, pixel_diff_detector: PixelDifferenceDetector,
+                 threshold: int):
+        self._pixel_diff_detector = pixel_diff_detector
+        self._threshold = threshold
+
+    def predict(self, img: Image) -> bool:
+        self._pixel_diff_detector.predict(img)
+
+        ret = False
+        with suppress(Exception):
+            ret = np.sum(self._pixel_diff_detector.img_delta > 0) > self._threshold
+            
+        return ret

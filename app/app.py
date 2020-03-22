@@ -30,8 +30,10 @@ def setup_tracking_system():
     tracker = predictors.CvTracker(tracker_name=settings.TRACKER_NAME,
                                    tracker_health=settings.MAX_TRACKER_HEALTH)
 
+    camera_moving_detector = predictors.CameraMovingDetector(detector, settings.CAMERA_MOVING_TH)
     tracking_sys = TrackingSystem(tracker=tracker,
                                   detector=detector,
+                                  camera_moving_detector=camera_moving_detector,
                                   pre_tracker_pipe=pre_tracker_pipe,
                                   pre_detector_pipe=pre_detector_pipe,
                                   video_source=utils.get_frame_generator(),
