@@ -45,6 +45,9 @@ class TrackingSystem:
         self.tracking = False
         self.detected = False
 
+        # stats
+        self.fps = 0
+
     def reset_state_vars(self):
         """
         Reset state variables. This function assumes
@@ -87,11 +90,11 @@ class TrackingSystem:
         return frame
 
     def run_sys(self):
+        t0 = time.time()
         for frame_orig in self.video_source:
             with self.run_lock:
                 if not self.running:
                     break
-
             with self.frame_lock:
                 self.curr_frame = frame_orig
             frame = frame_orig.copy()
@@ -128,6 +131,8 @@ class TrackingSystem:
                 else:
                     self.location = None
 
+            t_frame = time.time() - t0
+            self.fps = 1 / t_frame
             tracker_stat = self.tracker.get_stat()
 
             if self.display:
@@ -145,12 +150,12 @@ class TrackingSystem:
                           int(detect_bbox[1] + detect_bbox[3]))
                     cv2.rectangle(frame_display, p1, p2, (255, 0, 0), 2, 1)
 
-                cv2.putText(frame_display, 'Tracker FPS : {:.2f}'.format(tracker_stat['fps']), (10, 30),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2)
-                cv2.putText(frame_display, 'tracker', (10, 60),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 255, 0), 2)
-                cv2.putText(frame_display, 'detector', (10, 90),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 0, 0), 2)
+                cv2.putText(frame_display, 'FPS : {:.2f}'.format(self.fps), (10, 20),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (50, 170, 50), 2)
+                cv2.putText(frame_display, 'tracker', (10, 40),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                cv2.putText(frame_display, 'detector', (10, 60),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
 
                 cv2.imshow('app', frame_display)
                 with suppress(Exception):
@@ -164,3 +169,5 @@ class TrackingSystem:
                     f"time taken on detecting: {self.detector.get_stat()['frame_process_time']}")
                 print(
                     f"time taken on tracking: {self.tracker.get_stat()['frame_process_time']}")
+            
+            t0 = time.time()
