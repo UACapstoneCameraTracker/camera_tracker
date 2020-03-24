@@ -1,19 +1,4 @@
-IMG_SIZE = (640, 360)
-
-# tracker
-# CSRT, KCF, MEDIANFLOW, MOSSE
-TRACKER_NAME = 'KCF'
-IOU_THRESHOLD = 0.4
-MAX_TRACKER_HEALTH = 10
-
-# detector
-BBOX_AREA_MIN_TH = 150
-BBOX_AREA_MAX_TH = IMG_SIZE[0] * IMG_SIZE[1] / 10
-PIXEL_DIFFERENCE_TH = 10
-STRUCTURING_KERNEL_SHAPE = (5, 5)
-
-# camera moving
-CAMERA_MOVING_TH = IMG_SIZE[0] * IMG_SIZE[1] * (3 / 4)
+from setting_profiles.distance_5 import *
 
 # debug
 DISPLAY = True
