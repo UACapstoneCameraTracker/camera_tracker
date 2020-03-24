@@ -70,10 +70,11 @@ if __name__ == '__main__':
     if not Path(settings.IMG_FIFO_PATH).exists():
         os.mkfifo(settings.IMG_FIFO_PATH)
 
+    tracking_sys = setup_tracking_system()
+
     motor_thread = threading.Thread(target=motor_communication, name='motor')
     motor_thread.start()
 
-    tracking_sys = setup_tracking_system()
     tracking_sys.start()
 
     # start server communication thread
