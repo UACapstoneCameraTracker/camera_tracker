@@ -50,8 +50,9 @@ def server_communication():
         if frame is not None:
             with open(settings.IMG_FIFO_PATH, 'wb') as fifo:
                 fifo.flush()
-                frame = frame.astype('uint8')
-                fifo.write(frame.tobytes())
+                success, img = cv2.imencode('.jpg', frame)
+                if success:
+                    fifo.write(bytearray(img))
 
 
 def motor_communication():
