@@ -30,7 +30,8 @@ def setup_tracking_system():
     tracker = predictors.CvTracker(tracker_name=settings.TRACKER_NAME,
                                    tracker_health=settings.MAX_TRACKER_HEALTH)
 
-    camera_moving_detector = predictors.CameraMovingDetector(detector, settings.CAMERA_MOVING_TH)
+    camera_moving_detector = predictors.CameraMovingDetector(
+        detector, settings.CAMERA_MOVING_TH)
     tracking_sys = TrackingSystem(tracker=tracker,
                                   detector=detector,
                                   camera_moving_detector=camera_moving_detector,
@@ -69,6 +70,9 @@ if __name__ == '__main__':
     if not Path(settings.IMG_FIFO_PATH).exists():
         os.mkfifo(settings.IMG_FIFO_PATH)
 
+    motor_thread = threading.Thread(target=motor_communication, name='motor')
+    motor_thread.start()
+
     tracking_sys = setup_tracking_system()
     tracking_sys.start()
 
@@ -77,4 +81,5 @@ if __name__ == '__main__':
         target=server_communication, name='server_comm')
     server_comm_thread.start()
 
-    motor_communication()
+    while True:
+        time.sleep(1)
