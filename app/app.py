@@ -30,11 +30,8 @@ def setup_tracking_system():
     tracker = predictors.CvTracker(tracker_name=settings.TRACKER_NAME,
                                    tracker_health=settings.MAX_TRACKER_HEALTH)
 
-    camera_moving_detector = predictors.CameraMovingDetector(
-        detector, settings.CAMERA_MOVING_TH)
     tracking_sys = TrackingSystem(tracker=tracker,
                                   detector=detector,
-                                  camera_moving_detector=camera_moving_detector,
                                   pre_tracker_pipe=pre_tracker_pipe,
                                   pre_detector_pipe=pre_detector_pipe,
                                   video_source=utils.get_frame_generator(),
@@ -45,7 +42,6 @@ def setup_tracking_system():
 
 def server_communication():
     while True:
-        time.sleep(0.03)
         frame = tracking_sys.get_video_frame()
         print('frame received' if frame is not None else 'no frame')
         if frame is not None:
@@ -63,7 +59,15 @@ def motor_communication():
             while not tracking_sys.loc_cv.wait():
                 pass
             loc = tracking_sys.get_location()
+            if (settings.IMG_SIZE[0] / 2 - settings.DEAD_ZONE_X) < loc[0] < (settings.IMG_SIZE[0] / 2 + settings.DEAD_ZONE_X) and \
+                    (settings.IMG_SIZE[1] / 2 - settings.DEAD_ZONE_Y) < loc[1] < (settings.IMG_SIZE[1] / 2 + settings.DEAD_ZONE_Y):
+                print('in dead zone')
+                continue
+            print('location received, stopping..')
+            tracking_sys.pause()
             gimbal.move_to(loc)
+            print('tracking system starting...')
+            tracking_sys.resume()
 
 
 if __name__ == '__main__':
