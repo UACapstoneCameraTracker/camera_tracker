@@ -43,13 +43,28 @@ def setup_tracking_system():
 def server_communication():
     while True:
         frame = tracking_sys.get_video_frame()
-        print('frame received' if frame is not None else 'no frame')
         if frame is not None:
             with open(settings.IMG_FIFO_PATH, 'wb') as fifo:
                 fifo.flush()
                 success, img = cv2.imencode('.jpg', frame)
                 if success:
                     fifo.write(bytearray(img))
+        
+
+def server_command():
+    while True:
+        with open(settings.CMD_FIFO_PATH, 'r') as fifo:
+            cmd = fifo.readlines()
+            if not cmd:
+                continue
+            if cmd[0] == 'manual':
+                if cmd[1] == 'start':
+                    tracking_sys.pause()
+                elif cmd[1] == 'stop':
+                    tracking_sys.resume()
+            elif cmd[0] == 'select target':
+                bbox = (int(n) for n in cmd[1].split(','))
+                tracking_sys.set_target(bbox)
 
 
 def motor_communication():

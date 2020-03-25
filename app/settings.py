@@ -5,4 +5,4 @@ DISPLAY = True
 
 # communication
 IMG_FIFO_PATH = '/home/pi/fifo_img.jpg'
-LOC_FIFO_PATH = '/home/pi/fifo_loc.txt'
+CMD_FIFO_PATH = '/home/pi/fifo_cmd'
