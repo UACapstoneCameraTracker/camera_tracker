@@ -65,6 +65,9 @@ def server_command():
             elif cmd[0] == 'select target':
                 bbox = (int(n) for n in cmd[1].split(','))
                 tracking_sys.set_target(bbox)
+            else:
+                print('unknown command:')
+                print(cmd)
 
 
 def motor_communication():
@@ -76,7 +79,7 @@ def motor_communication():
             loc = tracking_sys.get_location()
             if (settings.IMG_SIZE[0] / 2 - settings.DEAD_ZONE_X) < loc[0] < (settings.IMG_SIZE[0] / 2 + settings.DEAD_ZONE_X) and \
                     (settings.IMG_SIZE[1] / 2 - settings.DEAD_ZONE_Y) < loc[1] < (settings.IMG_SIZE[1] / 2 + settings.DEAD_ZONE_Y):
-                print('in dead zone')
+                print(f'object ({int(loc[0])}, {int(loc[1])}) in dead zone')
                 continue
             print('location received, stopping..')
             tracking_sys.pause()
@@ -88,6 +91,9 @@ def motor_communication():
 if __name__ == '__main__':
     if not Path(settings.IMG_FIFO_PATH).exists():
         os.mkfifo(settings.IMG_FIFO_PATH)
+    
+    if not Path(settings.CMD_FIFO_PATH).exists():
+        os.mkfifo(settings.CMD_FIFO_PATH)
 
     tracking_sys = setup_tracking_system()
 
@@ -100,6 +106,10 @@ if __name__ == '__main__':
     server_comm_thread = threading.Thread(
         target=server_communication, name='server_comm')
     server_comm_thread.start()
+
+    server_cmd_thread = threading.Thread(
+        target=server_command, name='server_cmd')
+    server_cmd_thread.start()
 
     while True:
         time.sleep(1)

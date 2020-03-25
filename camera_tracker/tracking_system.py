@@ -61,6 +61,7 @@ class TrackingSystem:
         self.location = None
         self.tracking = False
         self.detected = False
+        self.detector.prev_img = None
 
     def start(self):
         self.thread = threading.Thread(
@@ -116,6 +117,7 @@ class TrackingSystem:
 
             with self.pause_lock:
                 if self.paused:
+                    time.sleep(0.01)
                     continue
 
             frame = frame_orig.copy()
@@ -126,7 +128,7 @@ class TrackingSystem:
                 frame = frame_orig.copy()
                 frame = utils.run_pipeline(self.pre_tracker_pipe, frame)
                 self.tracking, self.track_bbox = self.tracker.predict(frame)
-                if self.detected:
+                if self.detected and self.tracking:
                     # correct tracking if possible
                     iou = utils.bbox_intersection_over_union(
                         detect_bbox, self.track_bbox)
@@ -134,6 +136,15 @@ class TrackingSystem:
                         self.tracker.decrease_health()
                         if self.tracker.get_health() == 0:
                             self.tracking = False
+                    
+                    # only update location info when both tracking and detected
+                    with self.loc_lock:
+                        self.location = (self.track_bbox[0] + self.track_bbox[2] / 2,
+                                        self.track_bbox[1] + self.track_bbox[3] / 2)
+                        self.loc_cv.notify_all()
+
+                else:
+                    self.location = None
                 # else keep tracking
             else:
                 # tracker not tracking right now
@@ -144,13 +155,7 @@ class TrackingSystem:
                     self.track_bbox = detect_bbox
                 # else continue loop
 
-            with self.loc_lock:
-                if self.tracking:
-                    self.location = (self.track_bbox[0] + self.track_bbox[2] / 2,
-                                     self.track_bbox[1] + self.track_bbox[3] / 2)
-                    self.loc_cv.notify_all()
-                else:
-                    self.location = None
+            
 
             t_frame = time.time() - t0
             self.fps = 1 / t_frame
@@ -185,11 +190,11 @@ class TrackingSystem:
                 if (cv2.waitKey(1) & 0xFF) == ord('q'):
                     break
 
-                print(f'tracking: {self.tracking}; detected: {self.detected}')
-                print(
-                    f"time taken on detecting: {self.detector.get_stat()['frame_process_time']}")
-                print(
-                    f"time taken on tracking: {self.tracker.get_stat()['frame_process_time']}")
+                # print(f'tracking: {self.tracking}; detected: {self.detected}')
+                # print(
+                #     f"time taken on detecting: {self.detector.get_stat()['frame_process_time']}")
+                # print(
+                #     f"time taken on tracking: {self.tracker.get_stat()['frame_process_time']}")
 
             t0 = time.time()
 
