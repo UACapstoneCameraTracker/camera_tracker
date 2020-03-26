@@ -174,7 +174,7 @@ class CameraMovingDetector(BasePredictionComponent):
     def predict(self, img: Image) -> bool:
         self._pixel_diff_detector.predict(img)
 
-        ret = False
+        ret = True
         with suppress(Exception):
             ret = np.sum(self._pixel_diff_detector.img_delta > 0) > self._threshold
             

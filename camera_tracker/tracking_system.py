@@ -26,6 +26,7 @@ class TrackingSystem:
     def __init__(self, *args, **kwargs):
         self.tracker = kwargs['tracker']
         self.detector = kwargs['detector']
+        self.camera_moving_detector = kwargs['camera_moving_detector']
         self.pre_tracker_pipe = kwargs['pre_tracker_pipe']
         self.pre_detector_pipe = kwargs['pre_detector_pipe']
         self.video_source = kwargs['video_source']
@@ -86,7 +87,6 @@ class TrackingSystem:
         with self.pause_lock:
             self.paused = True
         self.reset_state_vars()
-        self.detector.prev_img = None
 
     def resume(self):
         with self.pause_lock:
@@ -122,6 +122,12 @@ class TrackingSystem:
 
             frame = frame_orig.copy()
             frame = utils.run_pipeline(self.pre_detector_pipe, frame)
+            
+            frame_tmp = frame.copy()
+            cam_moving = self.camera_moving_detector.predict(frame_tmp)
+            if cam_moving:
+                continue
+
             self.detected, detect_bbox = self.detector.predict(frame)
 
             if self.tracking:
@@ -198,11 +204,11 @@ class TrackingSystem:
 
             t0 = time.time()
 
-    def set_target(bbox):
+    def set_target(self, bbox):
         self.pause()
         self.reset_state_vars()
 
-        self.tracker.init_tracker(frame, bbox)
+        self.tracker.init_tracker(self.curr_frame, bbox)
         self.tracking = True
         self.track_bbox = bbox
 

@@ -29,9 +29,17 @@ def setup_tracking_system():
                                                   bbox_area_max=settings.BBOX_AREA_MAX_TH)
     tracker = predictors.CvTracker(tracker_name=settings.TRACKER_NAME,
                                    tracker_health=settings.MAX_TRACKER_HEALTH)
+    camera_moving_detector = predictors.CameraMovingDetector(
+        predictors.PixelDifferenceDetector(pixel_difference_threshold=settings.PIXEL_DIFFERENCE_TH,
+                                                  structuring_kernel_shape=settings.STRUCTURING_KERNEL_SHAPE,
+                                                  bbox_area_min=settings.BBOX_AREA_MIN_TH,
+                                                  bbox_area_max=settings.BBOX_AREA_MAX_TH),
+        settings.CAMERA_MOVING_THRESHOLD
+    )
 
     tracking_sys = TrackingSystem(tracker=tracker,
                                   detector=detector,
+                                  camera_moving_detector=camera_moving_detector,
                                   pre_tracker_pipe=pre_tracker_pipe,
                                   pre_detector_pipe=pre_detector_pipe,
                                   video_source=utils.get_frame_generator(),
@@ -55,6 +63,7 @@ def server_command():
     while True:
         with open(settings.CMD_FIFO_PATH, 'r') as fifo:
             cmd = fifo.readlines()
+            cmd = [c.strip() for c in cmd]
             if not cmd:
                 continue
             if cmd[0] == 'manual':
@@ -63,7 +72,7 @@ def server_command():
                 elif cmd[1] == 'stop':
                     tracking_sys.resume()
             elif cmd[0] == 'select target':
-                bbox = (int(n) for n in cmd[1].split(','))
+                bbox = tuple([int(n) for n in cmd[1].split(',')])
                 tracking_sys.set_target(bbox)
             else:
                 print('unknown command:')
