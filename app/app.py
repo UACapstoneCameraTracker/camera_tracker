@@ -49,7 +49,7 @@ def server_communication():
                 success, img = cv2.imencode('.jpg', frame)
                 if success:
                     fifo.write(bytearray(img))
-        
+
 
 def server_command():
     while True:
@@ -91,7 +91,7 @@ def motor_communication():
 if __name__ == '__main__':
     if not Path(settings.IMG_FIFO_PATH).exists():
         os.mkfifo(settings.IMG_FIFO_PATH)
-    
+
     if not Path(settings.CMD_FIFO_PATH).exists():
         os.mkfifo(settings.CMD_FIFO_PATH)
 
