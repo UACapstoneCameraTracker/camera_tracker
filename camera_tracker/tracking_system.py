@@ -31,7 +31,10 @@ class TrackingSystem:
         self.pre_detector_pipe = kwargs['pre_detector_pipe']
         self.video_source = kwargs['video_source']
         self.iou_threshold = kwargs['iou_threshold']
+        self.valid_loc_frame_cnt = kwargs['valid_loc_frame_cnt']
         self.display = kwargs['display']
+
+
         self.thread = None
         self.run_lock = threading.Lock()
         self.running = False
@@ -48,6 +51,8 @@ class TrackingSystem:
         self.tracking = False
         self.detected = False
 
+        self.tracking_frame_cnt = 0
+
         self.track_bbox = None
 
         # stats
@@ -62,6 +67,7 @@ class TrackingSystem:
         self.location = None
         self.tracking = False
         self.detected = False
+        self.tracking_frame_cnt = 0
         self.detector.prev_img = None
 
     def start(self):
@@ -137,6 +143,7 @@ class TrackingSystem:
                 frame = utils.run_pipeline(self.pre_tracker_pipe, frame)
                 self.tracking, self.track_bbox = self.tracker.predict(frame)
                 if self.detected and self.tracking:
+                    self.tracking_frame_cnt += 1
                     # correct tracking if possible
                     iou = utils.bbox_intersection_over_union(
                         detect_bbox, self.track_bbox)
@@ -144,20 +151,25 @@ class TrackingSystem:
                         self.tracker.decrease_health()
                         if self.tracker.get_health() == 0:
                             self.tracking = False
+                            self.tracking_frame_cnt = 0
+                    
                     
                     # only update location info when both tracking and detected
-                    with self.loc_lock:
-                        print(f'new target: {self.track_bbox}')
-                        self.location = (self.track_bbox[0] + self.track_bbox[2] / 2,
-                                        self.track_bbox[1] + self.track_bbox[3] / 2)
-                        print(f'new location: {self.location}')
-                        self.loc_cv.notify_all()
+                    if self.tracking_frame_cnt > self.valid_loc_frame_cnt:
+                        with self.loc_lock:
+                            print(f'new target: {self.track_bbox}')
+                            self.location = (self.track_bbox[0] + self.track_bbox[2] / 2,
+                                            self.track_bbox[1] + self.track_bbox[3] / 2)
+                            print(f'new location: {self.location}')
+                            self.loc_cv.notify_all()
 
                 else:
                     self.location = None
+                    self.tracking_frame_cnt = 0
                 # else keep tracking
             else:
                 # tracker not tracking right now
+                self.tracking_frame_cnt = 0
                 if self.detected:
                     # detected, so initialize tracker
                     self.tracker.init_tracker(frame, detect_bbox)

@@ -44,6 +44,7 @@ def setup_tracking_system():
                                   pre_detector_pipe=pre_detector_pipe,
                                   video_source=utils.get_frame_generator(),
                                   iou_threshold=settings.IOU_THRESHOLD,
+                                  valid_loc_frame_cnt=settings.VALID_LOC_FRAME_CNT,
                                   display=settings.DISPLAY)
     return tracking_sys
 
