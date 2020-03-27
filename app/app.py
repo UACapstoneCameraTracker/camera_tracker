@@ -72,8 +72,16 @@ def server_command():
                     tracking_sys.pause()
                 elif cmd[1] == 'stop':
                     tracking_sys.resume()
+                elif cmd[1] == 'location':
+                    if cmd[2] == 'reset':
+                        gimbal.reset_position()
+                    else:
+                        loc = [int(l) for l in cmd[2].split(',')]
+                        gimbal.move_to(loc, sleep=False)
+
             elif cmd[0] == 'select target':
                 bbox = tuple([int(n) for n in cmd[1].split(',')])
+                print(bbox)
                 tracking_sys.set_target(bbox)
             else:
                 print('unknown command:')
@@ -91,10 +99,11 @@ def motor_communication():
                     (settings.IMG_SIZE[1] / 2 - settings.DEAD_ZONE_Y) < loc[1] < (settings.IMG_SIZE[1] / 2 + settings.DEAD_ZONE_Y):
                 print(f'object ({int(loc[0])}, {int(loc[1])}) in dead zone')
                 continue
-            print('location received, stopping..')
+
+            print('pausing..')
             tracking_sys.pause()
             gimbal.move_to(loc)
-            print('tracking system starting...')
+            print('resuming...')
             tracking_sys.resume()
 
 
