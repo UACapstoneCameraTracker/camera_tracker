@@ -92,19 +92,27 @@ def motor_communication():
     gimbal.init_gimbal(settings.IMG_SIZE)
     while True:
         with tracking_sys.loc_cv:
-            while not tracking_sys.loc_cv.wait():
-                pass
-            loc = tracking_sys.get_location()
-            if (settings.IMG_SIZE[0] / 2 - settings.DEAD_ZONE_X) < loc[0] < (settings.IMG_SIZE[0] / 2 + settings.DEAD_ZONE_X) and \
-                    (settings.IMG_SIZE[1] / 2 - settings.DEAD_ZONE_Y) < loc[1] < (settings.IMG_SIZE[1] / 2 + settings.DEAD_ZONE_Y):
-                print(f'object ({int(loc[0])}, {int(loc[1])}) in dead zone')
-                continue
+            ret = tracking_sys.loc_cv.wait(settings.TIME_BEFORE_RECENTRE)
+            
+            if ret:
+                loc = tracking_sys.get_location()
+                if (settings.IMG_SIZE[0] / 2 - settings.DEAD_ZONE_X) < loc[0] < (settings.IMG_SIZE[0] / 2 + settings.DEAD_ZONE_X) and \
+                        (settings.IMG_SIZE[1] / 2 - settings.DEAD_ZONE_Y) < loc[1] < (settings.IMG_SIZE[1] / 2 + settings.DEAD_ZONE_Y):
+                    print(f'object ({int(loc[0])}, {int(loc[1])}) in dead zone')
+                    continue
 
-            print('pausing..')
-            tracking_sys.pause()
-            gimbal.move_to(loc)
-            print('resuming...')
-            tracking_sys.resume()
+                print('new location! pausing..')
+                tracking_sys.pause()
+                gimbal.move_to(loc)
+                print('resuming...')
+                tracking_sys.resume()
+            else:
+                # timeout, recentre
+                print('timeout, pausing..')
+                tracking_sys.pause()
+                gimbal.reset_position()
+                print('resuming...')
+                tracking_sys.resume()
 
 
 if __name__ == '__main__':

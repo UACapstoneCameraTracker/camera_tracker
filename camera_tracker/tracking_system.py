@@ -224,6 +224,7 @@ class TrackingSystem:
         self.pause()
         self.reset_state_vars()
 
+        print('set target at', bbox)
         self.tracker.init_tracker(self.curr_frame, bbox)
         self.tracking = True
         self.track_bbox = bbox
