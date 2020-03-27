@@ -86,6 +86,7 @@ class TrackingSystem:
     def pause(self):
         with self.pause_lock:
             self.paused = True
+        time.sleep(0.4)
         self.reset_state_vars()
 
     def resume(self):
@@ -117,7 +118,6 @@ class TrackingSystem:
 
             with self.pause_lock:
                 if self.paused:
-                    time.sleep(0.01)
                     continue
 
             frame = frame_orig.copy()
@@ -126,6 +126,8 @@ class TrackingSystem:
             frame_tmp = frame.copy()
             cam_moving = self.camera_moving_detector.predict(frame_tmp)
             if cam_moving:
+                print('camera is moving!')
+                self.reset_state_vars()
                 continue
 
             self.detected, detect_bbox = self.detector.predict(frame)
@@ -145,8 +147,10 @@ class TrackingSystem:
                     
                     # only update location info when both tracking and detected
                     with self.loc_lock:
+                        print(f'new target: {self.track_bbox}')
                         self.location = (self.track_bbox[0] + self.track_bbox[2] / 2,
                                         self.track_bbox[1] + self.track_bbox[3] / 2)
+                        print(f'new location: {self.location}')
                         self.loc_cv.notify_all()
 
                 else:
