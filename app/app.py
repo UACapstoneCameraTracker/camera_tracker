@@ -51,7 +51,7 @@ def setup_tracking_system():
 
 def server_communication():
     while True:
-        frame = tracking_sys.get_video_frame()
+        frame = tracking_sys.get_labeled_video_frame()
         if frame is not None:
             with open(settings.IMG_FIFO_PATH, 'wb') as fifo:
                 fifo.flush()

@@ -44,6 +44,9 @@ class TrackingSystem:
         self.curr_frame = None
         self.frame_lock = threading.RLock()
 
+        self.curr_labled_frame = None
+        self.labeled_frame_lock = threading.RLock()
+
         self.location = None
         self.loc_lock = threading.RLock()
         self.loc_cv = threading.Condition(self.loc_lock)
@@ -112,6 +115,15 @@ class TrackingSystem:
                 frame = None
         return frame
 
+
+    def get_labeled_video_frame(self):
+        with self.labeled_frame_lock:
+            if self.curr_labled_frame is not None:
+                frame = self.curr_labled_frame.copy()
+            else:
+                frame = None
+        return frame
+
     def run_sys(self):
         t0 = time.time()
         for frame_orig in self.video_source:
@@ -124,6 +136,8 @@ class TrackingSystem:
 
             with self.pause_lock:
                 if self.paused:
+                    with self.labeled_frame_lock:
+                        self.curr_labled_frame = frame_orig
                     continue
 
             frame = frame_orig.copy()
@@ -183,28 +197,32 @@ class TrackingSystem:
             self.fps = 1 / t_frame
             tracker_stat = self.tracker.get_stat()
 
+            
+            frame_display = frame_orig.copy()
+            frame_display = utils.run_pipeline(
+                self.pre_tracker_pipe, frame_display)
+            if self.tracking:
+                p1 = (int(self.track_bbox[0]), int(self.track_bbox[1]))
+                p2 = (int(self.track_bbox[0] + self.track_bbox[2]),
+                        int(self.track_bbox[1] + self.track_bbox[3]))
+                cv2.rectangle(frame_display, p1, p2, (0, 255, 0), 2, 1)
+            if self.detected:
+                p1 = (int(detect_bbox[0]), int(detect_bbox[1]))
+                p2 = (int(detect_bbox[0] + detect_bbox[2]),
+                        int(detect_bbox[1] + detect_bbox[3]))
+                cv2.rectangle(frame_display, p1, p2, (255, 0, 0), 2, 1)
+
+            cv2.putText(frame_display, 'FPS : {:.2f}'.format(self.fps), (10, 20),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (50, 170, 50), 2)
+            cv2.putText(frame_display, 'tracker', (10, 40),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            cv2.putText(frame_display, 'detector', (10, 60),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+            
+            with self.labeled_frame_lock:
+                self.curr_labled_frame = frame_display
+
             if self.display:
-                frame_display = frame_orig.copy()
-                frame_display = utils.run_pipeline(
-                    self.pre_tracker_pipe, frame_display)
-                if self.tracking:
-                    p1 = (int(self.track_bbox[0]), int(self.track_bbox[1]))
-                    p2 = (int(self.track_bbox[0] + self.track_bbox[2]),
-                          int(self.track_bbox[1] + self.track_bbox[3]))
-                    cv2.rectangle(frame_display, p1, p2, (0, 255, 0), 2, 1)
-                if self.detected:
-                    p1 = (int(detect_bbox[0]), int(detect_bbox[1]))
-                    p2 = (int(detect_bbox[0] + detect_bbox[2]),
-                          int(detect_bbox[1] + detect_bbox[3]))
-                    cv2.rectangle(frame_display, p1, p2, (255, 0, 0), 2, 1)
-
-                cv2.putText(frame_display, 'FPS : {:.2f}'.format(self.fps), (10, 20),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (50, 170, 50), 2)
-                cv2.putText(frame_display, 'tracker', (10, 40),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-                cv2.putText(frame_display, 'detector', (10, 60),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
-
                 cv2.imshow('app', frame_display)
                 with suppress(Exception):
                     cv2.imshow('delta', self.detector.img_delta)
