@@ -1,0 +1,9 @@
+[Unit]
+Description=Track moving object
+After=multi-user.target
+
+[Service]
+ExecStart=/bin/bash /home/pi/tracking_system/camera_tracker/script/start.sh
+
+[Install]
+WantedBy=multi-user.target

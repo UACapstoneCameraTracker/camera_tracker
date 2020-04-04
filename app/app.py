@@ -83,6 +83,11 @@ def server_command():
                 bbox = tuple([int(n) for n in cmd[1].split(',')])
                 print(bbox)
                 tracking_sys.set_target(bbox)
+                loc = (bbox[0]+bbox[2]/2, bbox[1]+bbox[3]/2)
+
+                tracking_sys.pause()
+                gimbal.move_to(loc)
+                tracking_sys.resume()
             else:
                 print('unknown command:')
                 print(cmd)
